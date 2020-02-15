@@ -59,12 +59,12 @@ https://github.com/alex-shpak/hugo-book
 <li><strong>java.util.concurrent</strong>
 
 <ul>
-<li><del>ExecutorService</del></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService</a></li>
+<li><del><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a></del></li>
+<li><del><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoinPool/">ForkJoinPool</a></del></li>
 <li><del>CompletableFuture</del></li>
 <li><del>CountDownLatch</del></li>
 <li><del>CyclicBarrier</del></li>
-<li><del>ForkJoinPool</del></li>
 <li><del>Phaser</del></li>
 <li><del>Semaphore</del></li>
 <li><del><strong>atomic</strong>.AtomicLong</del></li>
@@ -107,10 +107,60 @@ https://github.com/alex-shpak/hugo-book
 <article class="markdown">
 
 <h1 id="future">Future</h1>
+
+<blockquote>
+<p>en <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Future.html">java.util.concurrent.Future</a></p>
+
+<p>zh <a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/Future.html">java.util.concurrent.Future</a></p>
+</blockquote>
+
+<h2 id="future-接口">Future 接口</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">interface</span> Future<span style="color:#f92672">&lt;</span>V<span style="color:#f92672">&gt;</span> {
+  
+  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isDone</span>();
+  
+  V <span style="color:#a6e22e">get</span>() <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span>, ExecutionException;
+
+  V <span style="color:#a6e22e">get</span>(<span style="color:#66d9ef">long</span> <span style="color:#a6e22e">timeout</span>, TimeUnit <span style="color:#a6e22e">unit</span>)
+    <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span>, ExecutionException, TimeoutException;
+  
+  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">cancel</span>(<span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">mayInterruptIfRunning</span>);
+
+  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isCancelled</span>();
+
+}</code></pre></div>
+<h2 id="缺点">缺点</h2>
+
+<p>虽然 JDK5 新增的 <code>Future</code> 用于描述一个异步计算的结果，但是对于结果的获取却是很不方便，只能通过 <strong>阻塞</strong> 或者 <strong>轮询</strong> 的方式得到任务的结果。</p>
+
+<ul>
+<li><strong>阻塞的方式显然和我们的异步编程的初衷相违背</strong></li>
+<li><strong>轮询的方式又会耗费无谓的 CPU 资源，而且也不能及时地得到计算结果</strong></li>
+</ul>
+
+<h2 id="改进方案">改进方案</h2>
+
+<ul>
+<li>Guava <code>ListenableFuture</code></li>
+<li>JDK8 <code>CompletableFuture</code></li>
+</ul>
+
+<h2 id="read-more">Read More</h2>
+
+<ul>
+<li><a href="https://blog.csdn.net/pistolove/article/details/51232004">从 Java Future 到 Guava ListenableFuture 实现异步调用</a></li>
+</ul>
 </article>
 
       
-<div class="book-footer justify-end">
+<div class="book-footer justify-between">
+  
+  <div>
+    
+    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/0f2a3ff83effc1c2a2347aeb51e8310c59b1e843" title='Last modified Feb 15, 2020 by 杨凯彬' target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 15, 2020
+    </a>
+  </div>
   
   
   <div>
@@ -131,7 +181,13 @@ https://github.com/alex-shpak/hugo-book
   <aside class="book-toc level-3 fixed">
     <nav id="TableOfContents">
 <ul>
-<li><a href="#future">Future</a></li>
+<li><a href="#future">Future</a>
+<ul>
+<li><a href="#future-接口">Future 接口</a></li>
+<li><a href="#缺点">缺点</a></li>
+<li><a href="#改进方案">改进方案</a></li>
+<li><a href="#read-more">Read More</a></li>
+</ul></li>
 </ul>
 </nav>
   </aside>

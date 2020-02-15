@@ -15,7 +15,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/_sidebar/</guid>
-      <description> java.lang  Thread ThreadLocal  java.util.concurrent  ExecutorService Future CompletableFuture CountDownLatch CyclicBarrier ForkJoinPool Phaser Semaphore atomic.AtomicLong atomic.LongAdder locks.AbstractQueuedSynchronizer locks.ReentrantLock   </description>
+      <description> java.lang  Thread ThreadLocal  java.util.concurrent  ExecutorService Future ForkJoinPool CompletableFuture CountDownLatch CyclicBarrier Phaser Semaphore atomic.AtomicLong atomic.LongAdder locks.AbstractQueuedSynchronizer locks.ReentrantLock   </description>
     </item>
     
     <item>
@@ -87,7 +87,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/ExecutorService/</guid>
-      <description> ExecutorService </description>
+      <description>ExecutorService   java.util.concurrent.ExecutorService java.util.concurrent.ThreadPoolExecutor   继承关系 - Executor (java.util.concurrent) - ❤5❤ ExecutorService (java.util.concurrent) - AbstractExecutorService (java.util.concurrent) - ❤5❤ ThreadPoolExecutor (java.util.concurrent) - ❤5❤ ScheduledThreadPoolExecutor (java.util.concurrent) - ❤7❤ ForkJoinPool (java.util.concurrent) - ScheduledExecutorService (java.util.concurrent) - ScheduledThreadPoolExecutor (java.util.concurrent)  ThreadPoolExecutor ThreadPoolExecutor 的构造参数如下
+/** * @param corePoolSize 最小线程数 * @param maximumPoolSize 最大线程数 * @param keepAliveTime corePoolSize 到 maximumPoolSize 线程的空闲时间，超过该时间会被释放 * @param unit 参数 keepAliveTime 的单位 * @param workQueue 在任务执行之前保存进该队列 * @param threadFactory 线程工厂，主要给线程器名字，❤ 默认：Executors.</description>
     </item>
     
     <item>
@@ -96,7 +97,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/ForkJoinPool/</guid>
-      <description></description>
+      <description> ForkJoinPool </description>
     </item>
     
     <item>
@@ -105,7 +106,10 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/Future/</guid>
-      <description> Future </description>
+      <description> Future  en java.util.concurrent.Future
+zh java.util.concurrent.Future
+ Future 接口 public interface Future&amp;lt;V&amp;gt; { boolean isDone(); V get() throws InterruptedException, ExecutionException; V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException; boolean cancel(boolean mayInterruptIfRunning); boolean isCancelled(); } 缺点 虽然 JDK5 新增的 Future 用于描述一个异步计算的结果，但是对于结果的获取却是很不方便，只能通过 阻塞 或者 轮询 的方式得到任务的结果。
+ 阻塞的方式显然和我们的异步编程的初衷相违背 轮询的方式又会耗费无谓的 CPU 资源，而且也不能及时地得到计算结果  改进方案  Guava ListenableFuture JDK8 CompletableFuture  Read More  从 Java Future 到 Guava ListenableFuture 实现异步调用  </description>
     </item>
     
     <item>

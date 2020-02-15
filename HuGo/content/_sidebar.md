@@ -6,12 +6,12 @@ headless: true
   - [~~Thread~~]({{< relref "/docs/java.lang/Thread.md" >}})
   - [ThreadLocal]({{< relref "/docs/java.lang/ThreadLocal.md" >}})
 - **java.util.concurrent**
-  - ~~ExecutorService~~
-  - [Future]({{< relref "/docs/java.util.concurrent/Future.md" >}})
+  - [ExecutorService]({{< relref "/docs/java.util.concurrent/ExecutorService.md" >}})
+  - ~~[Future]({{< relref "/docs/java.util.concurrent/Future.md" >}})~~
+  - ~~[ForkJoinPool]({{< relref "/docs/java.util.concurrent/ForkJoinPool.md" >}})~~
   - ~~CompletableFuture~~
   - ~~CountDownLatch~~
   - ~~CyclicBarrier~~
-  - ~~ForkJoinPool~~
   - ~~Phaser~~
   - ~~Semaphore~~
   - ~~**atomic**.AtomicLong~~

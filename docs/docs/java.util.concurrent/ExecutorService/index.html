@@ -59,12 +59,12 @@ https://github.com/alex-shpak/hugo-book
 <li><strong>java.util.concurrent</strong>
 
 <ul>
-<li><del>ExecutorService</del></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService</a></li>
+<li><del><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a></del></li>
+<li><del><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoinPool/">ForkJoinPool</a></del></li>
 <li><del>CompletableFuture</del></li>
 <li><del>CountDownLatch</del></li>
 <li><del>CyclicBarrier</del></li>
-<li><del>ForkJoinPool</del></li>
 <li><del>Phaser</del></li>
 <li><del>Semaphore</del></li>
 <li><del><strong>atomic</strong>.AtomicLong</del></li>
@@ -107,10 +107,185 @@ https://github.com/alex-shpak/hugo-book
 <article class="markdown">
 
 <h1 id="executorservice">ExecutorService</h1>
+
+<blockquote>
+<ul>
+<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/ExecutorService.html">java.util.concurrent.ExecutorService</a></li>
+<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/ThreadPoolExecutor.html">java.util.concurrent.ThreadPoolExecutor</a></li>
+</ul>
+</blockquote>
+
+<h2 id="继承关系">继承关系</h2>
+
+<pre><code>- Executor (java.util.concurrent)
+  - ❤5❤ ExecutorService (java.util.concurrent)
+    - AbstractExecutorService (java.util.concurrent)
+      - ❤5❤ ThreadPoolExecutor (java.util.concurrent)
+        - ❤5❤ ScheduledThreadPoolExecutor (java.util.concurrent)
+      - ❤7❤ ForkJoinPool (java.util.concurrent)
+    - ScheduledExecutorService (java.util.concurrent)
+      - ScheduledThreadPoolExecutor (java.util.concurrent)
+</code></pre>
+
+<h2 id="threadpoolexecutor">ThreadPoolExecutor</h2>
+
+<p>ThreadPoolExecutor 的构造参数如下</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">/**
+</span><span style="color:#75715e">* @param corePoolSize 最小线程数
+</span><span style="color:#75715e">* @param maximumPoolSize 最大线程数
+</span><span style="color:#75715e">* @param keepAliveTime corePoolSize 到 maximumPoolSize 线程的空闲时间，超过该时间会被释放
+</span><span style="color:#75715e">* @param unit 参数 keepAliveTime 的单位
+</span><span style="color:#75715e">* @param workQueue 在任务执行之前保存进该队列
+</span><span style="color:#75715e">* @param threadFactory 线程工厂，主要给线程器名字，❤ 默认：Executors.defaultThreadFactory()
+</span><span style="color:#75715e">* @param handler 任务数大于 maxPoolSize 和 队列大小时 的拒绝策略，❤ 默认：AbortPolicy，抛出拒绝异常
+</span><span style="color:#75715e">*/</span>
+<span style="color:#66d9ef">public</span> <span style="color:#a6e22e">ThreadPoolExecutor</span>(
+    <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">corePoolSize</span>,
+    <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">maximumPoolSize</span>,
+    <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">keepAliveTime</span>,
+    TimeUnit <span style="color:#a6e22e">unit</span>,
+    BlockingQueue<span style="color:#f92672">&lt;</span>Runnable<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">workQueue</span>,
+    ThreadFactory <span style="color:#a6e22e">threadFactory</span>,
+    RejectedExecutionHandler <span style="color:#a6e22e">handler</span>
+){ ... }</code></pre></div>
+<h3 id="execute-与-submit-的区别">execute 与 submit 的区别</h3>
+
+<p><code>ThreadPoolExecutor# void execute</code> 和 <code>AbstractExecutorService# Future&lt;T&gt; submit</code> 的区别就像方法签名本身一样，只是返回值不同，<code>submit</code> 内部还是调用的 <code>execute</code> 方法，只是把参数封装成 <code>FutureTask</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// @see AbstractExecutorService
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">public</span> <span style="color:#a6e22e">Future</span><span style="color:#f92672">&lt;?&gt;</span> submit(Runnable <span style="color:#a6e22e">runnable</span>) {
+    <span style="color:#66d9ef">if</span> (task <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span>) <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> NullPointerException();
+    <span style="color:#75715e">// new FutureTask&lt;T&gt;(runnable, value)
+</span><span style="color:#75715e"></span>    RunnableFuture<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">ftask</span> <span style="color:#f92672">=</span> newTaskFor(runnable, <span style="color:#66d9ef">null</span>);
+    execute(ftask); <span style="color:#75715e">// ❤
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span> ftask;
+}</code></pre></div>
+<blockquote>
+<p>@see <a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a> Page</p>
+</blockquote>
+
+<p>execute 的执行要复杂许多，主要有以下几个步骤，详见 <code>ThreadPoolExecutor#execute</code> 代码注释</p>
+
+<ul>
+<li>如果线程池中的线程数量少于 <strong><code>corePoolSize</code></strong>，就创建新的线程来执行新添加的任务</li>
+<li>如果线程池中的线程数量大于等于 corePoolSize，但队列 <strong><code>workQueue</code></strong> 未满，则将新添加的任务放到workQueue 中</li>
+<li>如果队列workQueue已满，但线程池中的线程数量小于<strong><code>maximumPoolSize</code></strong>，则会创建新的线程来处理被添加的任务</li>
+<li>如果线程池中的线程数量等于了 maximumPoolSize ，就用 <strong><code>RejectedExecutionHandler</code></strong> 来执行拒绝策略</li>
+</ul>
+
+<blockquote>
+<p>所以，假如一个任务执行需要 1分钟，为了避免触发拒绝策略，则一分钟内提交的任务不能超过多少？</p>
+
+<p>答案是  <strong><code>workQueue.size()</code></strong>  + <strong><code>maxPoolSize</code></strong>，即 <strong>队列中等待执行的任务</strong> + <strong>正在执行的任务</strong></p>
+</blockquote>
+
+<h3 id="rejectedexecutionhandler">RejectedExecutionHandler</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// AbortPolicy (默认)： 抛出 RejectedExecutionException 异常
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AbortPolicy</span> <span style="color:#66d9ef">implements</span> <span style="color:#a6e22e">RejectedExecutionHandler</span> {
+  <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">void</span> rejectedExecution(Runnable <span style="color:#a6e22e">r</span>, ThreadPoolExecutor <span style="color:#a6e22e">e</span>) {
+    <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> RejectedExecutionException(<span style="color:#e6db74">&#34;Task &#34;</span> <span style="color:#f92672">+</span> r.<span style="color:#a6e22e">toString</span>() <span style="color:#f92672">+</span> 
+                                         <span style="color:#e6db74">&#34; rejected from &#34;</span> <span style="color:#f92672">+</span> e.<span style="color:#a6e22e">toString</span>());
+  }
+}
+
+<span style="color:#75715e">// CallerRunsPolicy： 调用线程的 run() 方法，即同步执行，能够减缓新任务的提交速度
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CallerRunsPolicy</span> <span style="color:#66d9ef">implements</span> <span style="color:#a6e22e">RejectedExecutionHandler</span> {
+  <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">void</span> rejectedExecution(Runnable <span style="color:#a6e22e">r</span>, ThreadPoolExecutor <span style="color:#a6e22e">e</span>) {
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>e.<span style="color:#a6e22e">isShutdown</span>()) {
+      r.<span style="color:#a6e22e">run</span>();
+    }
+  }
+}
+
+<span style="color:#75715e">// DiscardPolicy： 丢弃当前
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DiscardPolicy</span> <span style="color:#66d9ef">implements</span> <span style="color:#a6e22e">RejectedExecutionHandler</span> {
+  <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">void</span> rejectedExecution(Runnable <span style="color:#a6e22e">r</span>, ThreadPoolExecutor <span style="color:#a6e22e">e</span>) {
+  }
+}
+
+<span style="color:#75715e">// DiscardOldestPolicy： 丢弃最老的线程
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DiscardOldestPolicy</span> <span style="color:#66d9ef">implements</span> <span style="color:#a6e22e">RejectedExecutionHandler</span> {
+  <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">void</span> rejectedExecution(Runnable <span style="color:#a6e22e">r</span>, ThreadPoolExecutor <span style="color:#a6e22e">e</span>) {
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>e.<span style="color:#a6e22e">isShutdown</span>()) {
+      e.<span style="color:#a6e22e">getQueue</span>().<span style="color:#a6e22e">poll</span>();
+      e.<span style="color:#a6e22e">execute</span>(r);
+    }
+  }
+}</code></pre></div>
+<h2 id="通过-executors-工厂创建">通过 Executors 工厂创建</h2>
+
+<h3 id="newsinglethreadexecutor">newSingleThreadExecutor</h3>
+
+<p>单例线程，只有一个线程的线程池</p>
+
+<p>多余的任务都会放在 <code>LinkedBlockingQueue</code> 队列中，默认大小是 <code>Integer.MAX_VALUE</code>，<strong>可能会内存溢出</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">new</span> ThreadPoolExecutor(
+  1,1, 
+  0L,TimeUnit.<span style="color:#a6e22e">MILLISECONDS</span>, 
+  <span style="color:#66d9ef">new</span> LinkedBlockingQueue<span style="color:#f92672">&lt;</span>Runnable<span style="color:#f92672">&gt;</span>())
+)</code></pre></div>
+<h3 id="newfixedthreadpool-nthreads">newFixedThreadPool(nThreads)</h3>
+
+<p>与 <code>newSingleThreadExecutor</code> 的 <strong>区别仅仅在于线程池的大小</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">new</span> ThreadPoolExecutor(
+  nThreads, nThreads,
+  0L, TimeUnit.<span style="color:#a6e22e">MILLISECONDS</span>,
+  <span style="color:#66d9ef">new</span> LinkedBlockingQueue<span style="color:#f92672">&lt;</span>Runnable<span style="color:#f92672">&gt;</span>()
+)</code></pre></div>
+<h3 id="newcachedthreadpool">newCachedThreadPool</h3>
+
+<p><code>SynchronousQueue</code> 是一个<strong>没有容量的队列</strong>，插入(<code>put</code>)操作必须等待另一个线程的对应移除(<code>take</code>)操作，<strong>如果没有消费线程，写入操作会一直阻塞</strong>。</p>
+
+<p>该操作创建的线程池，<strong>所有丢进去的任务都会直接创建成工作线程</strong>，因为 corePoolSize 是 0，<strong>线程总数几乎没有限制</strong>，所有创建的线程都受到 <code>keepAliveTime</code> 的管理，即 <strong>1分钟空闲被回收</strong>，通常用于执行一些生命周期很短的任务，快速创建又快速消逝。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">new</span> ThreadPoolExecutor(
+  0, Integer.<span style="color:#a6e22e">MAX_VALUE</span>,
+  60L, TimeUnit.<span style="color:#a6e22e">SECONDS</span>,
+  <span style="color:#66d9ef">new</span> SynchronousQueue<span style="color:#f92672">&lt;</span>Runnable<span style="color:#f92672">&gt;</span>()
+)</code></pre></div>
+<h3 id="newscheduledthreadpool">newScheduledThreadPool</h3>
+
+<p>调度型线程池，这个池子里的线程可以按 schedule <strong>延迟执行</strong> 或 <strong>周期执行</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">new</span> ScheduledThreadPoolExecutor(corePoolSize);
+
+<span style="color:#66d9ef">public</span> <span style="color:#a6e22e">ScheduledThreadPoolExecutor</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">corePoolSize</span>) {
+  <span style="color:#66d9ef">super</span>(
+    corePoolSize, Integer.<span style="color:#a6e22e">MAX_VALUE</span>, 
+    0, NANOSECONDS, 
+    <span style="color:#66d9ef">new</span> DelayedWorkQueue()
+  );
+}</code></pre></div>
+<h4 id="newsinglethreadscheduledexecutor">newSingleThreadScheduledExecutor</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">new</span> ScheduledThreadPoolExecutor(1)</code></pre></div>
+<h3 id="1-8-newworkstealingpool-parallelism">[1.8]newWorkStealingPool(parallelism)</h3>
+
+<blockquote>
+<p>@see [1.7] <a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoinPool/">ForkJoinPool</a> Page</p>
+</blockquote>
+
+<p>创建 parallelism 个线程 的线程池，来维持相应的并行级别，它会通过<strong>工作窃取</strong>的方式，使得多核的 CPU 不会闲置，总会有活着的线程让 CPU 去运行。<strong>所谓工作窃取，指的是闲置的线程去处理本不属于它的任务</strong>。每个处理器核，都有一个队列存储着需要完成的任务。对于多核的机器来说，当一个核对应的任务处理完毕后，就可以去帮助其他的核处理任务。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">new</span> ForkJoinPool(
+  parallelism,
+  ForkJoinPool.<span style="color:#a6e22e">defaultForkJoinWorkerThreadFactory</span>,
+  <span style="color:#66d9ef">null</span>, 
+  <span style="color:#66d9ef">true</span>
+)</code></pre></div>
+<h2 id="read-more">Read More</h2>
+
+<ul>
+<li><a href="https://www.cnblogs.com/trust-freedom/p/6681948.html">Java线程池ThreadPoolExecutor使用和分析(二) - execute()原理</a></li>
+<li><a href="https://cloud.tencent.com/developer/article/1362826">Java 8 对线程池有哪些改进？</a></li>
+</ul>
 </article>
 
       
-<div class="book-footer justify-end">
+<div class="book-footer justify-between">
+  
+  <div>
+    
+    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/0f2a3ff83effc1c2a2347aeb51e8310c59b1e843" title='Last modified Feb 15, 2020 by 杨凯彬' target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 15, 2020
+    </a>
+  </div>
   
   
   <div>
@@ -131,7 +306,27 @@ https://github.com/alex-shpak/hugo-book
   <aside class="book-toc level-3 fixed">
     <nav id="TableOfContents">
 <ul>
-<li><a href="#executorservice">ExecutorService</a></li>
+<li><a href="#executorservice">ExecutorService</a>
+<ul>
+<li><a href="#继承关系">继承关系</a></li>
+<li><a href="#threadpoolexecutor">ThreadPoolExecutor</a>
+<ul>
+<li><a href="#execute-与-submit-的区别">execute 与 submit 的区别</a></li>
+<li><a href="#rejectedexecutionhandler">RejectedExecutionHandler</a></li>
+</ul></li>
+<li><a href="#通过-executors-工厂创建">通过 Executors 工厂创建</a>
+<ul>
+<li><a href="#newsinglethreadexecutor">newSingleThreadExecutor</a></li>
+<li><a href="#newfixedthreadpool-nthreads">newFixedThreadPool(nThreads)</a></li>
+<li><a href="#newcachedthreadpool">newCachedThreadPool</a></li>
+<li><a href="#newscheduledthreadpool">newScheduledThreadPool</a>
+<ul>
+<li><a href="#newsinglethreadscheduledexecutor">newSingleThreadScheduledExecutor</a></li>
+</ul></li>
+<li><a href="#1-8-newworkstealingpool-parallelism">[1.8]newWorkStealingPool(parallelism)</a></li>
+</ul></li>
+<li><a href="#read-more">Read More</a></li>
+</ul></li>
 </ul>
 </nav>
   </aside>
