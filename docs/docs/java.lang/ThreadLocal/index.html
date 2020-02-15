@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thread Local | Java-Concurrent</title>
+
+
+<link rel="stylesheet" href="/Java-Concurrent/book.min.79de1f7861b0c98f453c0a93bebf3608a280809e417787746c373699639900d7.css">
+
+
+
+
+<link rel="icon" href="/Java-Concurrent/favicon.png" type="image/x-icon">
+
+
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body>
+  <input type="checkbox" style="display: none" id="menu-control" />
+  <main class="flex container">
+
+    <aside class="book-menu fixed">
+      <nav>
+<h2 class="book-brand">
+  <a href="https://hello-world-example.github.io/Java-Concurrent/">Java-Concurrent</a>
+</h2>
+
+
+
+
+
+
+    
+  
+  
+  
+
+  <style>
+  nav ul a[href$="\2fJava-Concurrent\2f docs\2fjava.lang\2fThreadLocal\2f "] {
+      color: #004ed0;
+  }
+  </style>
+
+<ul>
+<li><strong>java.lang</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.lang/Thread/"><del>Thread</del></a></li>
+<li><a href="/Java-Concurrent/docs/java.lang/ThreadLocal/">ThreadLocal</a></li>
+</ul></li>
+<li><strong>java.util.concurrent</strong>
+
+<ul>
+<li><del>ExecutorService</del></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a></li>
+<li><del>CompletableFuture</del></li>
+<li><del>CountDownLatch</del></li>
+<li><del>CyclicBarrier</del></li>
+<li><del>ForkJoinPool</del></li>
+<li><del>Phaser</del></li>
+<li><del>Semaphore</del></li>
+<li><del><strong>atomic</strong>.AtomicLong</del></li>
+<li><del><strong>atomic</strong>.LongAdder</del></li>
+<li><del><strong>locks</strong>.AbstractQueuedSynchronizer</del></li>
+<li><del><strong>locks</strong>.ReentrantLock</del></li>
+</ul></li>
+</ul>
+
+
+
+
+
+
+
+</nav>
+
+
+<script>
+(function() {
+  var menu = document.querySelector("aside.book-menu nav");
+  addEventListener("beforeunload", function(event) {
+    localStorage.setItem("menu.scrollTop", menu.scrollTop);
+  });
+  menu.scrollTop = localStorage.getItem("menu.scrollTop");
+})();
+</script>
+
+    </aside>
+
+    <div class="book-page">
+      <header class="flex align-center justify-between book-header">
+  <label for="menu-control">
+    <img src="/Java-Concurrent/svg/menu.svg" alt="Menu" />
+  </label>
+  <strong>Thread Local</strong>
+</header>
+
+      
+<article class="markdown">
+
+<h1 id="threadload">ThreadLoad</h1>
+
+<h2 id="简介">简介</h2>
+
+<ul>
+<li>ThreadLocal 实例通常是<strong>类中的 private static final 字段</strong></li>
+<li>数据 每个线程维护一份，<strong>通过隔离、避免竞争</strong></li>
+<li>线程池中每个线程是共享的，使用完需要清除，否则下次的线程使用者会使用到上次使用者设置的数据</li>
+<li>个人感觉 数据是由 Thread 自己维护的，<strong>ThreadLocal 只是给我们提供了操作 Thread 内部变量的工具</strong></li>
+</ul>
+
+<h2 id="threadlocal-代码片段">ThreadLocal 代码片段</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">ThreadLocalMap <span style="color:#a6e22e">getMap</span>(Thread <span style="color:#a6e22e">t</span>) {
+  <span style="color:#66d9ef">return</span> t.<span style="color:#a6e22e">threadLocals</span>;
+}
+
+<span style="color:#75715e">// key: ThreadLocal ; vlaue: 是存储的数据
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">createMap</span>(Thread <span style="color:#a6e22e">t</span>, T <span style="color:#a6e22e">firstValue</span>) {
+  t.<span style="color:#a6e22e">threadLocals</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ThreadLocalMap(<span style="color:#66d9ef">this</span>, firstValue);
+}
+
+<span style="color:#66d9ef">public</span> <span style="color:#a6e22e">T</span> get() {
+  <span style="color:#75715e">// native 方法，返回当前线程对象
+</span><span style="color:#75715e"></span>  Thread <span style="color:#a6e22e">t</span> <span style="color:#f92672">=</span> Thread.<span style="color:#a6e22e">currentThread</span>(); 
+  <span style="color:#75715e">// 获取线程（Thread）的 threadLocals 变量，类型是 ThreadLocal.ThreadLocalMap 
+</span><span style="color:#75715e"></span>  ThreadLocalMap <span style="color:#a6e22e">map</span> <span style="color:#f92672">=</span> getMap(t); 
+  <span style="color:#75715e">// 刚创建出来的 线程（Thread）维护的 threadLocals 变量是 null
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (map <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>) { 
+    <span style="color:#75715e">// 获取当前 ThreadLocal 对应的 value 数据
+</span><span style="color:#75715e"></span>    ThreadLocalMap.<span style="color:#a6e22e">Entry</span> <span style="color:#a6e22e">e</span> <span style="color:#f92672">=</span> map.<span style="color:#a6e22e">getEntry</span>(<span style="color:#66d9ef">this</span>);
+    <span style="color:#66d9ef">if</span> (e <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>)
+      <span style="color:#66d9ef">return</span> (T)e.<span style="color:#a6e22e">value</span>;
+  }
+  <span style="color:#75715e">/*
+</span><span style="color:#75715e">   * 刚创建出来的 线程（Thread）维护的 threadLocals 变量是 null
+</span><span style="color:#75715e">   * 设置、获取 初始化值，当前线程 与 初始化值 进行绑定
+</span><span style="color:#75715e">   */</span>
+  <span style="color:#66d9ef">return</span> setInitialValue();
+}
+
+
+
+<span style="color:#66d9ef">private</span> <span style="color:#a6e22e">T</span> setInitialValue() {
+  <span style="color:#75715e">/**
+</span><span style="color:#75715e">   * initialValue() 是 protected 的，可以在创建 ThreadLocal 的时候进行覆盖，默认返回 null
+</span><span style="color:#75715e">   */</span>
+  T <span style="color:#a6e22e">value</span> <span style="color:#f92672">=</span> initialValue();
+  <span style="color:#75715e">// native 方法，返回当前线程对象
+</span><span style="color:#75715e"></span>  Thread <span style="color:#a6e22e">t</span> <span style="color:#f92672">=</span> Thread.<span style="color:#a6e22e">currentThread</span>(); 
+  <span style="color:#75715e">// 获取线程（Thread）的 threadLocals 变量，类型是 ThreadLocal.ThreadLocalMap 
+</span><span style="color:#75715e"></span>  ThreadLocalMap <span style="color:#a6e22e">map</span> <span style="color:#f92672">=</span> getMap(t); 
+  <span style="color:#66d9ef">if</span> (map <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>)
+    map.<span style="color:#a6e22e">set</span>(<span style="color:#66d9ef">this</span>, value);
+  <span style="color:#66d9ef">else</span>
+    <span style="color:#75715e">/**
+</span><span style="color:#75715e">     * 首次创建的时候 ThreadLocalMap map 是 null
+</span><span style="color:#75715e">     * createMap 会 创建一个 ThreadLocalMap 赋值给线程的threadLocals变量， 
+</span><span style="color:#75715e">     * ThreadLocalMap 内部维护一个 Entry 数组， 
+</span><span style="color:#75715e">     * Entry 继承 WeakReference&lt;ThreadLocal&gt;, 对 持有ThreadLocal（this）弱引用
+</span><span style="color:#75715e">     */</span>
+    createMap(t, value); 
+  
+  <span style="color:#66d9ef">return</span> value;
+}
+
+<span style="color:#75715e">/**
+</span><span style="color:#75715e"> * 逻辑 跟 setInitialValue() 类似
+</span><span style="color:#75715e"> */</span>
+<span style="color:#66d9ef">public</span> <span style="color:#a6e22e">void</span> set(T <span style="color:#a6e22e">value</span>) {
+  Thread <span style="color:#a6e22e">t</span> <span style="color:#f92672">=</span> Thread.<span style="color:#a6e22e">currentThread</span>();
+  ThreadLocalMap <span style="color:#a6e22e">map</span> <span style="color:#f92672">=</span> getMap(t);
+  <span style="color:#66d9ef">if</span> (map <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>)
+    map.<span style="color:#a6e22e">set</span>(<span style="color:#66d9ef">this</span>, value);
+  <span style="color:#66d9ef">else</span>
+    createMap(t, value);
+}
+
+<span style="color:#75715e">/**
+</span><span style="color:#75715e"> * 
+</span><span style="color:#75715e"> * 移除此线程局部变量当前线程的值。
+</span><span style="color:#75715e"> * 
+</span><span style="color:#75715e"> * remove之后，如果此线程局部变量随后被当前线程 读取，且这期间当前线程没有 设置其值，则将调用其 initialValue() 方法重新初始化其值。
+</span><span style="color:#75715e"> * 
+</span><span style="color:#75715e"> * 这将导致在当前线程多次调用 initialValue 方法。
+</span><span style="color:#75715e"> *
+</span><span style="color:#75715e"> * @since 1.5
+</span><span style="color:#75715e"> */</span>
+<span style="color:#66d9ef">public</span> <span style="color:#a6e22e">void</span> remove() {
+  ThreadLocalMap <span style="color:#a6e22e">m</span> <span style="color:#f92672">=</span> getMap(Thread.<span style="color:#a6e22e">currentThread</span>());
+  <span style="color:#66d9ef">if</span> (m <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>)
+    m.<span style="color:#a6e22e">remove</span>(<span style="color:#66d9ef">this</span>);
+}</code></pre></div>
+<h2 id="threadlocal-threadlocalmap-代码片段">ThreadLocal.ThreadLocalMap 代码片段</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">class</span> ThreadLocal<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> {
+
+  <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">createMap</span>(Thread <span style="color:#a6e22e">t</span>, T <span style="color:#a6e22e">firstValue</span>) {
+    t.<span style="color:#a6e22e">threadLocals</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ThreadLocalMap(<span style="color:#66d9ef">this</span>, firstValue);
+  }
+
+  <span style="color:#66d9ef">static</span> <span style="color:#a6e22e">class</span> ThreadLocalMap {
+
+    <span style="color:#75715e">/**
+</span><span style="color:#75715e">     * ThreadLocalMap 
+</span><span style="color:#75715e">     */</span>
+    <span style="color:#66d9ef">static</span> <span style="color:#a6e22e">class</span> Entry <span style="color:#a6e22e">extends</span> WeakReference<span style="color:#f92672">&lt;</span>ThreadLocal<span style="color:#f92672">&gt;</span> {
+      Object <span style="color:#a6e22e">value</span>;
+      Entry(ThreadLocal <span style="color:#a6e22e">k</span>, Object <span style="color:#a6e22e">v</span>) {
+        <span style="color:#66d9ef">super</span>(k);
+        value <span style="color:#f92672">=</span> v;
+      }
+    }
+
+    ThreadLocalMap(ThreadLocal <span style="color:#a6e22e">firstKey</span>, Object <span style="color:#a6e22e">firstValue</span>) {
+      table <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Entry[INITIAL_CAPACITY]; <span style="color:#75715e">// INITIAL_CAPACITY = 16 
+</span><span style="color:#75715e"></span>      <span style="color:#75715e">/*
+</span><span style="color:#75715e">       * threadLocalHashCode 在ThreadLocal被实例化的时候创建 （private final int threadLocalHashCode = nextHashCode();） 
+</span><span style="color:#75715e">       * 每创建一个 ThreadLocal 实例，新创建的ThreadLocal实例局变量threadLocalHashCode值 都在上次创建的基础上 加 HASH_INCREMENT(1640531527)(16进制 0x61c88647)
+</span><span style="color:#75715e">       */</span>
+      <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">=</span> firstKey.<span style="color:#a6e22e">threadLocalHashCode</span> <span style="color:#f92672">&amp;</span> (INITIAL_CAPACITY <span style="color:#f92672">-</span> 1); <span style="color:#75715e">// 类似于  101010011101100 &amp; 1111 = 1100
+</span><span style="color:#75715e"></span>      table[i] <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Entry(firstKey, firstValue);
+      size <span style="color:#f92672">=</span> 1;
+      setThreshold(INITIAL_CAPACITY);
+    }
+
+  }
+
+}</code></pre></div>
+<h2 id="关系图">关系图</h2>
+
+<p><img src="../images/ThreadLocal.jpg" alt="ThreadLocal 内部关系" /></p>
+
+<h2 id="read-more">Read More</h2>
+
+<ul>
+<li><a href="http://tool.oschina.net/uploads/apidocs/jdk-zh/java/lang/ThreadLocal.html">类 <code>ThreadLocal&lt;T&gt;</code></a> 中文文档</li>
+<li><a href="http://www.cnblogs.com/onlywujun/p/3524675.html">ThreadLocal可能引起的内存泄露</a></li>
+<li><a href="https://stackoverflow.com/search?q=threadlocal">StackOverflow threadlocal 相关问题</a></li>
+</ul>
+
+<h2 id="神奇的数字-0x61c88647-1640531527-hash-increment">神奇的数字 0x61c88647 (1640531527)(HASH_INCREMENT)</h2>
+
+<p>计算方式 <code>(Math.sqrt(5)-1) * Math.pow(2,31) - Math.pow(2,32)</code> ≈ <strong><code>0.618 * Math.pow(2,32) - Math.pow(2,32)</code></strong></p>
+
+<ul>
+<li><a href="http://www.cnblogs.com/ilellen/p/4135266.html">ThreadLocal 和神奇的数字 0x61c88647</a></li>
+<li><a href="https://baike.baidu.com/item/%E6%96%90%E6%B3%A2%E9%82%A3%E5%A5%91%E6%95%B0%E5%88%97#5_2">斐波那契数列</a></li>
+</ul>
+</article>
+
+      
+<div class="book-footer justify-end">
+  
+  
+  <div>
+    <a href="https://github.com/hello-world-example/Java-Concurrent/edit/master/HuGo/content/docs/java.lang/ThreadLocal.md" target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/edit.svg" alt="Edit" /> Edit this page
+    </a>
+  </div>
+  
+</div>
+
+
+      
+    </div>
+
+    
+  
+
+  <aside class="book-toc level-3 fixed">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#threadload">ThreadLoad</a>
+<ul>
+<li><a href="#简介">简介</a></li>
+<li><a href="#threadlocal-代码片段">ThreadLocal 代码片段</a></li>
+<li><a href="#threadlocal-threadlocalmap-代码片段">ThreadLocal.ThreadLocalMap 代码片段</a></li>
+<li><a href="#关系图">关系图</a></li>
+<li><a href="#read-more">Read More</a></li>
+<li><a href="#神奇的数字-0x61c88647-1640531527-hash-increment">神奇的数字 0x61c88647 (1640531527)(HASH_INCREMENT)</a></li>
+</ul></li>
+</ul>
+</nav>
+  </aside>
+
+
+
+  </main>
+  
+  
+  
+</body>
+
+</html>
