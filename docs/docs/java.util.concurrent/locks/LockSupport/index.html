@@ -121,10 +121,109 @@ https://github.com/alex-shpak/hugo-book
 <article class="markdown">
 
 <h1 id="locksupport">LockSupport</h1>
+
+<blockquote>
+<p>zh <a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/LockSupport.html">java.util.concurrent.locks.LockSupport</a> 官方文档的描述也很清楚</p>
+</blockquote>
+
+<ul>
+<li><code>LockSupport</code> 是基于 <code>sun.misc.Unsafe</code> 封装的 <strong>线程阻塞工具类</strong></li>
+<li>主要提供 <code>park</code> 和 <code>unpark</code> ，即 <strong>阻塞</strong> 和 <strong>解除阻塞</strong> 两类功能</li>
+<li>类似于 <code>Object</code> 的 <strong>wait</strong> 和 <strong>notify</strong> ，但是<strong>不需要获取 锁对象</strong>，也不会抛出中断异常</li>
+<li>类似于 <code>Thread</code> 的 <del><strong>suspend</strong></del> 和 <strong><del>resume</del></strong> 过时方法，<strong>不会有产生死锁的副作用</strong></li>
+<li><code>park</code> 和 <code>unpark</code> 可以理解为 <strong>操作线程的许可标示</strong>（true:许可 / false:不许可）
+
+<ul>
+<li>一个线程只有一个许可，默认是 false，调用  <code>park</code>  直接阻塞</li>
+<li>假如先调动  <code>unpark</code> ，则线程的许可为 true，调用  <code>park</code>  直接返回，不阻塞</li>
+<li>因为一个线程只有一个许可，调用多次  <code>unpark</code> 与1次的效果是一样</li>
+<li>假如一开始没有 许可，调用  <code>park</code>  阻塞，需要调用   <code>unpark</code>  给予许可同行，解除阻塞</li>
+<li>解除同行后 许可 变为 禁止，下次  <code>park</code>  曾然阻塞</li>
+</ul></li>
+</ul>
+
+<h2 id="一些示例">一些示例</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 假如先调动 unpark ，则线程的许可为 true，调用 park 直接返回，不阻塞
+</span><span style="color:#75715e"></span>{
+    LockSupport.<span style="color:#a6e22e">unpark</span>(Thread.<span style="color:#a6e22e">currentThread</span>());
+    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;❤ 这里直接通过&#34;</span>);
+    LockSupport.<span style="color:#a6e22e">park</span>();
+    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;end&#34;</span>);
+}
+
+<span style="color:#75715e">// 调用多次 unpark 与1次的效果是一样
+</span><span style="color:#75715e">// 解除通行后 许可 变为 禁止，下次  park  曾然阻塞
+</span><span style="color:#75715e"></span>{
+    LockSupport.<span style="color:#a6e22e">unpark</span>(Thread.<span style="color:#a6e22e">currentThread</span>());
+    LockSupport.<span style="color:#a6e22e">unpark</span>(Thread.<span style="color:#a6e22e">currentThread</span>());
+  
+    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;这里直接通过&#34;</span>);
+    LockSupport.<span style="color:#a6e22e">park</span>();
+    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;❤ 这里仍然会阻塞&#34;</span>);
+    LockSupport.<span style="color:#a6e22e">park</span>();
+    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;end&#34;</span>);
+}
+
+{
+    <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Thread</span> threadMain <span style="color:#f92672">=</span> Thread.<span style="color:#a6e22e">currentThread</span>();
+    <span style="color:#66d9ef">new</span> Thread(() <span style="color:#f92672">-&gt;</span> {
+        <span style="color:#66d9ef">try</span> { Thread.<span style="color:#a6e22e">sleep</span>(2000); } <span style="color:#66d9ef">catch</span> (InterruptedException <span style="color:#a6e22e">e</span>) {  }
+        <span style="color:#75715e">// 2s 后为主线程解锁（解除阻塞）
+</span><span style="color:#75715e"></span>        System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;unpark&#34;</span> <span style="color:#f92672">+</span> System.<span style="color:#a6e22e">currentTimeMillis</span>());
+        LockSupport.<span style="color:#a6e22e">unpark</span>(threadMain);
+    }).<span style="color:#a6e22e">start</span>();
+
+    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;park  &#34;</span> <span style="color:#f92672">+</span> System.<span style="color:#a6e22e">currentTimeMillis</span>());
+    LockSupport.<span style="color:#a6e22e">park</span>();
+    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;ok    &#34;</span> <span style="color:#f92672">+</span> System.<span style="color:#a6e22e">currentTimeMillis</span>());
+  
+  <span style="color:#75715e">// 输出
+</span><span style="color:#75715e"></span>  park   ...<span style="color:#a6e22e">1520</span>
+  unpark ...<span style="color:#a6e22e">3526</span>
+  ok     ...<span style="color:#a6e22e">3526</span>
+}</code></pre></div>
+<h2 id="park-park-object-blocker">park / park(Object blocker)</h2>
+
+<p>程序启动之后，通过 <code>jps</code> 找到对应的 java 进程 id，<code>jcmd &lt;pid&gt; Thread.print</code>  打印线程栈信息</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">$ <span style="color:#a6e22e">jps</span>  
+$ <span style="color:#a6e22e">jcmd</span> <span style="color:#f92672">&lt;</span>pid<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">Thread</span>.<span style="color:#a6e22e">print</span>
+  
+{
+  <span style="color:#75715e">/**
+</span><span style="color:#75715e">   * &#34;main&#34; #1 prio=5 os_prio=31 tid=0x00007fb4e6802000 nid=0x1103 waiting on condition [0x0000700009ca2000]
+</span><span style="color:#75715e">   *    java.lang.Thread.State: WAITING (parking)
+</span><span style="color:#75715e">   *         at sun.misc.Unsafe.park(Native Method)
+</span><span style="color:#75715e">   *         at java.util.concurrent.locks.LockSupport.park(LockSupport.java:304)
+</span><span style="color:#75715e">   *         at xyz.kail.demo.java.concurrent.locks.LockSupportParkMain.main(LockSupportParkMain.java:8)
+</span><span style="color:#75715e">   */</span>
+  LockSupport.<span style="color:#a6e22e">park</span>();
+}
+
+{
+  <span style="color:#75715e">/**
+</span><span style="color:#75715e">   * &#34;main&#34; #1 prio=5 os_prio=31 tid=0x00007f7fc8002000 nid=0xd03 waiting on condition [0x0000700001b1d000]
+</span><span style="color:#75715e">   *    java.lang.Thread.State: WAITING (parking)
+</span><span style="color:#75715e">   *         at sun.misc.Unsafe.park(Native Method)
+</span><span style="color:#75715e">   *         - parking to wait for  &lt;0x000000076ada4748&gt; (a java.util.HashMap)
+</span><span style="color:#75715e">   *         at java.util.concurrent.locks.LockSupport.park(LockSupport.java:175)
+</span><span style="color:#75715e">   *         at xyz.kail.demo.java.concurrent.locks.LockSupportParkMain.main(LockSupportParkMain.java:18)
+</span><span style="color:#75715e">   */</span>
+  LockSupport.<span style="color:#a6e22e">park</span>(<span style="color:#66d9ef">new</span> HashMap<span style="color:#f92672">&lt;&gt;</span>());
+}</code></pre></div>
+<p>可以看到 区别在于 <code>park(Object blocker)</code> 会多一行 <code>- parking to wait for  &lt;0x000000076ada4748&gt; (a java.util.HashMap)</code> 显示 <code>blocker</code> 的类。</p>
+
+<p><code>blocker</code> 对象会保存在 <code>Thread</code> 对象的 <code>volatile Object parkBlocker</code> 属性中，可通过 <code>LockSupport.getBlocker(thread)</code> 获取。</p>
 </article>
 
       
-<div class="book-footer justify-end">
+<div class="book-footer justify-between">
+  
+  <div>
+    
+    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/492e3ef9b5e9ba3b6137a1294daf8228067d8ce1" title='Last modified Feb 16, 2020 by 杨凯彬' target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 16, 2020
+    </a>
+  </div>
   
   
   <div>
@@ -145,7 +244,11 @@ https://github.com/alex-shpak/hugo-book
   <aside class="book-toc level-3 fixed">
     <nav id="TableOfContents">
 <ul>
-<li><a href="#locksupport">LockSupport</a></li>
+<li><a href="#locksupport">LockSupport</a>
+<ul>
+<li><a href="#一些示例">一些示例</a></li>
+<li><a href="#park-park-object-blocker">park / park(Object blocker)</a></li>
+</ul></li>
 </ul>
 </nav>
   </aside>
