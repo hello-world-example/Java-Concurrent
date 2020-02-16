@@ -53,7 +53,7 @@ https://github.com/alex-shpak/hugo-book
 <li><strong>java.lang</strong>
 
 <ul>
-<li><a href="/Java-Concurrent/docs/java.lang/Thread/"><del>Thread</del></a></li>
+<li><a href="/Java-Concurrent/docs/java.lang/Thread/">Thread</a></li>
 <li><a href="/Java-Concurrent/docs/java.lang/ThreadLocal/">ThreadLocal</a></li>
 </ul></li>
 <li><strong>java.util.concurrent</strong>
@@ -107,6 +107,251 @@ https://github.com/alex-shpak/hugo-book
 <article class="markdown">
 
 <h1 id="thread">Thread</h1>
+
+<h2 id="线程状态">线程状态</h2>
+
+<blockquote>
+<p>@see <a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/lang/Thread.State.html">java.lang.Thread.State</a></p>
+</blockquote>
+
+<ol>
+<li><code>NEW</code>  至今尚未启动的线程处于这种状态，<code>new Thread</code></li>
+<li><code>RUNNABLE</code>  正在 Java 虚拟机中执行的线程处于这种状态，<code>new Thread().start()</code></li>
+<li><code>BLOCKED</code>  受阻塞并等待某个监视器锁的线程处于这种状态，<code>synchronized(lock){}</code></li>
+<li><code>WAITING</code>  无限期地等待另一个线程来执行某一特定操作的线程处于这种状态，<code>synchronized(lock){ lock.wait() }</code></li>
+<li><code>TIMED_WAITING</code>  等待另一个线程来执行取决于指定等待时间的操作的线程处于这种状态，，<code>synchronized(lock){ lock.wait(timeout) }</code> 、<code>Thread.sleep(timeout)</code></li>
+<li><code>TERMINATED</code>  线程执行结束</li>
+</ol>
+
+<h2 id="methods-简介">Methods 简介</h2>
+
+<h3 id="thread-join">thread.join()</h3>
+
+<p>等待线程执行完毕，再向下执行，与主线程的关系变成 <strong>串行执行</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Thread</span> thread <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Thread(() <span style="color:#f92672">-&gt;</span> System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(System.<span style="color:#a6e22e">currentTimeMillis</span>()));
+thread.<span style="color:#a6e22e">start</span>();
+<span style="color:#75715e">// 等待 thread 线程执行完毕， 再执行下面的代码
+</span><span style="color:#75715e"></span>thread.<span style="color:#a6e22e">join</span>();
+System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;Main 方法结束&#34;</span>);</code></pre></div>
+<h3 id="thread-yield">Thread.yield()</h3>
+
+<p>使 <em>当前</em> 线程从<strong>执行状态</strong> 变为 <strong>就绪状态</strong>，CPU 重新从众多  <strong>就绪状态</strong> 的线程里选择，<strong>包括当前线程</strong>。</p>
+
+<ul>
+<li>优先级高的<strong>不是一定被执行</strong></li>
+<li>当前线程<strong>不是已经不被执行</strong></li>
+<li>所有 就绪状态的线程，<strong>都有可能被执行</strong></li>
+<li>情况取决于 CPU 的选择，<strong>结果是随机的</strong></li>
+</ul>
+
+<h3 id="thread-interrupt">thread.interrupt()</h3>
+
+<p>中断操作只是一个标志位，并不会立即终止当前线程，需要自身在业务逻辑中判断 <code>thread.isInterrupted()</code>，并确定是否执行后续的代码。</p>
+
+<h3 id="thread-interrupted-thread-isinterrupted">Thread.interrupted / thread.isInterrupted</h3>
+
+<p>用于判断当前线程是否被标记为中断，需要注意的是这两个方法的区别</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// Thread.interrupted();
+</span><span style="color:#75715e">// ❤❤❤ 静态方法 重置中断状态 ❤❤❤
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">interrupted</span>() {
+  <span style="color:#66d9ef">return</span> currentThread().<span style="color:#a6e22e">isInterrupted</span>(<span style="color:#66d9ef">true</span>);
+}
+
+<span style="color:#75715e">// Thread.currentThread().isInterrupted();
+</span><span style="color:#75715e">// ❤❤❤ 实例方法 不重置中断状态 ❤❤❤
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">boolean</span> isInterrupted() {
+  <span style="color:#66d9ef">return</span> isInterrupted(<span style="color:#66d9ef">false</span>);
+}
+
+<span style="color:#75715e">/**
+</span><span style="color:#75715e"> * 判断线程是否中断，ClearInterrupted 用于控制是否重置中断状态
+</span><span style="color:#75715e"> */</span>
+<span style="color:#66d9ef">private</span> <span style="color:#a6e22e">native</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isInterrupted</span>(<span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">ClearInterrupted</span>);</code></pre></div>
+<p>除此之外，<strong>产生 <code>InterruptedException</code> 后，也会清除中断状态</strong>。</p>
+
+<blockquote>
+<p>一个比较合理的解释是：中断应该只被处理一次，catch 了 InterruptedException，说明能处理这个异常，不希望上层调用者看到这个中断，详见：<a href="https://blog.csdn.net/hj7jay/article/details/53462553">interrupted 和 isInterrupted 的区别</a></p>
+</blockquote>
+
+<h3 id="thread-isalive">thread.isAlive()</h3>
+
+<p>如果线程已经启动且尚未终止，则为活动状态</p>
+
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>isAlive()</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>NEW</td>
+<td><strong>false</strong></td>
+</tr>
+
+<tr>
+<td>RUNNABLE</td>
+<td>true</td>
+</tr>
+
+<tr>
+<td>BLOCKED</td>
+<td><strong>true</strong></td>
+</tr>
+
+<tr>
+<td>WAITING / TIMED_WAITING</td>
+<td><strong>true</strong></td>
+</tr>
+
+<tr>
+<td>TERMINATED</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="uncaughtexceptionhandler">UncaughtExceptionHandler</h3>
+
+<p>线程内部的运行时异常，不能在线程 外部 <code>try...catch...</code> 获取，如果需要自定义处理，需要设置异常处理器</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 线程全局异常 处理器
+</span><span style="color:#75715e"></span>Thread.<span style="color:#a6e22e">setDefaultUncaughtExceptionHandler</span>((t, e) <span style="color:#f92672">-&gt;</span> System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;[System]线程 &#34;</span> <span style="color:#f92672">+</span> t.<span style="color:#a6e22e">getName</span>() <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; 抛出异常&#34;</span> <span style="color:#f92672">+</span> e.<span style="color:#a6e22e">getMessage</span>()));
+
+<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Thread</span> thread <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Thread(() <span style="color:#f92672">-&gt;</span> System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(1 <span style="color:#f92672">/</span> 0));
+
+<span style="color:#75715e">// 实例异常捕捉器
+</span><span style="color:#75715e"></span>thread.<span style="color:#a6e22e">setUncaughtExceptionHandler</span>((t, e) <span style="color:#f92672">-&gt;</span> System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;[Thread]线程 &#34;</span> <span style="color:#f92672">+</span> t.<span style="color:#a6e22e">getName</span>() <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; 抛出异常&#34;</span> <span style="color:#f92672">+</span> e.<span style="color:#a6e22e">getMessage</span>()));
+
+thread.<span style="color:#a6e22e">start</span>();</code></pre></div>
+<h3 id="thread-getstacktrace">thread.getStackTrace()</h3>
+
+<p>获取堆栈跟踪信息，<strong>常用来获取调用方信息</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#f92672">package</span> <span style="color:#a6e22e">xyz</span>.<span style="color:#a6e22e">kail</span>.<span style="color:#a6e22e">demo</span>.<span style="color:#a6e22e">java</span>.<span style="color:#a6e22e">concurrent</span>.<span style="color:#a6e22e">thread</span>;
+
+<span style="color:#66d9ef">public</span> <span style="color:#a6e22e">class</span> StackTraceThreadMain {
+
+    <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">printStackTrace</span>(StackTraceElement[] <span style="color:#a6e22e">stackTraces</span>) {
+        <span style="color:#66d9ef">for</span> (StackTraceElement <span style="color:#a6e22e">stackTrace</span> <span style="color:#f92672">:</span> stackTraces) {
+            System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(stackTrace.<span style="color:#a6e22e">toString</span>());
+        }
+    }
+
+    <span style="color:#66d9ef">private</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">b</span>() {
+        printStackTrace(Thread.<span style="color:#a6e22e">currentThread</span>().<span style="color:#a6e22e">getStackTrace</span>());
+    }
+
+
+    <span style="color:#66d9ef">private</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">a</span>() {
+        b();
+    }
+
+    <span style="color:#75715e">/**
+</span><span style="color:#75715e">     * java.lang.Thread.getStackTrace(Thread.java:1559)
+</span><span style="color:#75715e">     * xyz.kail.demo.java.concurrent.thread.StackTraceThreadMain.b(StackTraceThreadMain.java:12)
+</span><span style="color:#75715e">     * xyz.kail.demo.java.concurrent.thread.StackTraceThreadMain.a(StackTraceThreadMain.java:17)
+</span><span style="color:#75715e">     * xyz.kail.demo.java.concurrent.thread.StackTraceThreadMain.main(StackTraceThreadMain.java:30)
+</span><span style="color:#75715e">     */</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span>(String[] <span style="color:#a6e22e">args</span>) {
+        a();
+    }
+}</code></pre></div>
+<h3 id="thread-getallstacktraces">Thread.getAllStackTraces()</h3>
+
+<p>以下输出信息在 Debug 的时候应该很常见</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">class</span> AllStackTracesThreadMain {
+
+    <span style="color:#75715e">/**
+</span><span style="color:#75715e">     * Thread Name::: Reference Handler
+</span><span style="color:#75715e">     * java.lang.Object.wait(Native Method)
+</span><span style="color:#75715e">     * java.lang.Object.wait(Object.java:502)
+</span><span style="color:#75715e">     * java.lang.ref.Reference.tryHandlePending(Reference.java:191)
+</span><span style="color:#75715e">     * java.lang.ref.Reference$ReferenceHandler.run(Reference.java:153)
+</span><span style="color:#75715e">     *
+</span><span style="color:#75715e">     * Thread Name::: Monitor Ctrl-Break
+</span><span style="color:#75715e">     * java.net.PlainSocketImpl.socketCreate(Native Method)
+</span><span style="color:#75715e">     * java.net.AbstractPlainSocketImpl.create(AbstractPlainSocketImpl.java:109)
+</span><span style="color:#75715e">     * java.net.Socket.createImpl(Socket.java:457)
+</span><span style="color:#75715e">     * java.net.Socket.&lt;init&gt;(Socket.java:431)
+</span><span style="color:#75715e">     * java.net.Socket.&lt;init&gt;(Socket.java:211)
+</span><span style="color:#75715e">     * com.intellij.rt.execution.application.AppMainV2$1.run(AppMainV2.java:59)
+</span><span style="color:#75715e">     *
+</span><span style="color:#75715e">     * Thread Name::: Signal Dispatcher
+</span><span style="color:#75715e">     *
+</span><span style="color:#75715e">     * Thread Name::: Finalizer
+</span><span style="color:#75715e">     * java.lang.Object.wait(Native Method)
+</span><span style="color:#75715e">     * java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:143)
+</span><span style="color:#75715e">     * java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:164)
+</span><span style="color:#75715e">     * java.lang.ref.Finalizer$FinalizerThread.run(Finalizer.java:209)
+</span><span style="color:#75715e">     *
+</span><span style="color:#75715e">     * Thread Name::: main
+</span><span style="color:#75715e">     * java.lang.Thread.dumpThreads(Native Method)
+</span><span style="color:#75715e">     * java.lang.Thread.getAllStackTraces(Thread.java:1610)
+</span><span style="color:#75715e">     * xyz.kail.demo.java.concurrent.thread.AllStackTracesThreadMain.main(AllStackTracesThreadMain.java:8)
+</span><span style="color:#75715e">     */</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span>(String[] <span style="color:#a6e22e">args</span>) {
+        <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Map</span><span style="color:#f92672">&lt;</span>Thread, StackTraceElement[]<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">allStackTraces</span> <span style="color:#f92672">=</span> Thread.<span style="color:#a6e22e">getAllStackTraces</span>();
+        allStackTraces.<span style="color:#a6e22e">forEach</span>((thread, value) <span style="color:#f92672">-&gt;</span> {
+            System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;Thread Name::: &#34;</span> <span style="color:#f92672">+</span> thread.<span style="color:#a6e22e">getName</span>());
+            StackTraceThreadMain.<span style="color:#a6e22e">printStackTrace</span>(value);
+            System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>();
+
+        });
+    }
+}</code></pre></div>
+<h3 id="thread-dumpstack">Thread.dumpStack</h3>
+
+<p>将当前线程的堆栈跟踪打印至标准错误流。该方法仅用于调试。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">dumpStack</span>() {
+  <span style="color:#66d9ef">new</span> Exception(<span style="color:#e6db74">&#34;Stack trace&#34;</span>).<span style="color:#a6e22e">printStackTrace</span>();
+}</code></pre></div>
+<h2 id="废弃的方法">废弃的方法</h2>
+
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Desc</th>
+<th>废弃原因</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>stop()</code></td>
+<td><strong>强迫</strong> 线程停止</td>
+<td>假设线程中需要执行 1/2/3/4 四个步骤，调用 <code>stop()</code> 之后，无法预知执行到哪一步了，这有<strong>可能导致任意的行为</strong></td>
+</tr>
+
+<tr>
+<td><code>suspend()</code> / <code>resume()</code></td>
+<td>暂停 / 恢复 线程</td>
+<td>如果目标线程持有锁，<strong>调用 suspend 之后，不会释放锁</strong><br />如果 resume 方法先于 suspend 方法调用，就会<strong>导致死锁</strong></td>
+</tr>
+
+<tr>
+<td><code>destroy()</code></td>
+<td>无实现</td>
+<td>该方法没有实现逻辑，直接抛出 <code>throw new NoSuchMethodError()</code> 异常</td>
+</tr>
+
+<tr>
+<td><code>countStackFrames()</code></td>
+<td>计算堆栈帧数</td>
+<td>线程必须挂起，依赖于 <code>suspend()</code></td>
+</tr>
+</tbody>
+</table>
+
+<blockquote>
+<p>为何不赞成使用 <code>Thread.stop</code>、<code>Thread.suspend</code> 和 <code>Thread.resume</code> ？</p>
+
+<ul>
+<li><a href="https://blog.csdn.net/loongshawn/article/details/53034176">中文 译文</a></li>
+<li><a href="https://docs.oracle.com/javase/1.5.0/docs/guide/misc/threadPrimitiveDeprecation.html">英文 原文</a></li>
+</ul>
+</blockquote>
 </article>
 
       
@@ -138,7 +383,23 @@ https://github.com/alex-shpak/hugo-book
   <aside class="book-toc level-3 fixed">
     <nav id="TableOfContents">
 <ul>
-<li><a href="#thread">Thread</a></li>
+<li><a href="#thread">Thread</a>
+<ul>
+<li><a href="#线程状态">线程状态</a></li>
+<li><a href="#methods-简介">Methods 简介</a>
+<ul>
+<li><a href="#thread-join">thread.join()</a></li>
+<li><a href="#thread-yield">Thread.yield()</a></li>
+<li><a href="#thread-interrupt">thread.interrupt()</a></li>
+<li><a href="#thread-interrupted-thread-isinterrupted">Thread.interrupted / thread.isInterrupted</a></li>
+<li><a href="#thread-isalive">thread.isAlive()</a></li>
+<li><a href="#uncaughtexceptionhandler">UncaughtExceptionHandler</a></li>
+<li><a href="#thread-getstacktrace">thread.getStackTrace()</a></li>
+<li><a href="#thread-getallstacktraces">Thread.getAllStackTraces()</a></li>
+<li><a href="#thread-dumpstack">Thread.dumpStack</a></li>
+</ul></li>
+<li><a href="#废弃的方法">废弃的方法</a></li>
+</ul></li>
 </ul>
 </nav>
   </aside>

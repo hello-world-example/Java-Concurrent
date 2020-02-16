@@ -3,7 +3,7 @@ headless: true
 ---
 
 - **java.lang**
-  - [~~Thread~~]({{< relref "/docs/java.lang/Thread.md" >}})
+  - [Thread]({{< relref "/docs/java.lang/Thread.md" >}})
   - [ThreadLocal]({{< relref "/docs/java.lang/ThreadLocal.md" >}})
 - **java.util.concurrent**
   - [ExecutorService]({{< relref "/docs/java.util.concurrent/ExecutorService.md" >}})

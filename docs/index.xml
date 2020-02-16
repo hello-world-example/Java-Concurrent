@@ -24,7 +24,10 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.lang/Thread/</guid>
-      <description> Thread </description>
+      <description>Thread 线程状态  @see java.lang.Thread.State
+  NEW 至今尚未启动的线程处于这种状态，new Thread RUNNABLE 正在 Java 虚拟机中执行的线程处于这种状态，new Thread().start() BLOCKED 受阻塞并等待某个监视器锁的线程处于这种状态，synchronized(lock){} WAITING 无限期地等待另一个线程来执行某一特定操作的线程处于这种状态，synchronized(lock){ lock.wait() } TIMED_WAITING 等待另一个线程来执行取决于指定等待时间的操作的线程处于这种状态，，synchronized(lock){ lock.wait(timeout) } 、Thread.sleep(timeout) TERMINATED 线程执行结束  Methods 简介 thread.join() 等待线程执行完毕，再向下执行，与主线程的关系变成 串行执行。
+final Thread thread = new Thread(() -&amp;gt; System.out.println(System.currentTimeMillis())); thread.start(); // 等待 thread 线程执行完毕， 再执行下面的代码 thread.join(); System.out.println(&amp;#34;Main 方法结束&amp;#34;); Thread.yield() 使 当前 线程从执行状态 变为 就绪状态，CPU 重新从众多 就绪状态 的线程里选择，包括当前线程。
+ 优先级高的不是一定被执行 当前线程不是已经不被执行 所有 就绪状态的线程，都有可能被执行 情况取决于 CPU 的选择，结果是随机的  thread.</description>
     </item>
     
     <item>

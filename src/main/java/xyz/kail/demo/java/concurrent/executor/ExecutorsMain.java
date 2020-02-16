@@ -2,34 +2,42 @@ package xyz.kail.demo.java.concurrent.executor;
 
 import lombok.SneakyThrows;
 
-import java.util.Date;
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
 
-public class ExecutorsMain implements Runnable {
+public class ExecutorsMain {
 
     public static void main(String[] args) throws InterruptedException {
-        final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(3);
+        final Thread thread = new Thread(() -> {
+            System.out.println(Thread.State.RUNNABLE + ":" + Thread.currentThread().getState());
+            sleep(1);
 
-        final ExecutorService executor = Executors.newWorkStealingPool(2);
-        executor.execute(new ExecutorsMain(2));
-        executor.execute(new ExecutorsMain(2));
-        executor.execute(new ExecutorsMain(2));
-        executor.execute(new ExecutorsMain(2));
+            lock(1);
+        });
 
 
-        System.out.println("join");
-    }
+        System.out.println(Thread.State.NEW + ":" + thread.getState());
+        thread.start();
 
-    int sleep;
+        new Thread(() -> {
+            lock(3_000);
+            System.out.println(thread.getState());
+        }).start();
 
-    public ExecutorsMain(int sleep) {
-        this.sleep = sleep;
+        thread.join();
+        System.out.println(Thread.State.TERMINATED + ":" + thread.getState());
     }
 
     @SneakyThrows
-    @Override
-    public void run() {
-        System.out.println(sleep);
+    private synchronized static void lock(int sleep) {
+        ExecutorsMain.class.wait(sleep);
+
+        ExecutorsMain.class.notifyAll();
+    }
+
+    @SneakyThrows
+    private static void sleep(int sleep) {
         TimeUnit.SECONDS.sleep(sleep);
     }
+
+
 }
