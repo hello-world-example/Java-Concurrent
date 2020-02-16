@@ -8,20 +8,27 @@
 
 ```java
 public interface Future<V> {
-  
-  boolean isDone();
-  
+  // 等待任务结束，获取结果
   V get() throws InterruptedException, ExecutionException;
-
-  V get(long timeout, TimeUnit unit)
-    throws InterruptedException, ExecutionException, TimeoutException;
-  
+  // 获取结果，设置超时时间
+  V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException;
+  // 取消任务的执行
   boolean cancel(boolean mayInterruptIfRunning);
-
+  // 正常完成前取消，返回 true
   boolean isCancelled();
-
+  // 任务正常终止、异常或取消，返回true
+  boolean isDone();
 }
 ```
+
+## 继承关系
+
+- **Future** (java.util.concurrent)
+	- RunnableFuture (java.util.concurrent)
+		- **FutureTask** (java.util.concurrent)
+	- **ForkJoinTask** (java.util.concurrent)
+	- **CompletableFuture** (java.util.concurrent)
+	- ...
 
 ## 缺点
 

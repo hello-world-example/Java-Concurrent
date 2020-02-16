@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unsafe | Java-Concurrent</title>
+
+
+<link rel="stylesheet" href="/Java-Concurrent/book.min.79de1f7861b0c98f453c0a93bebf3608a280809e417787746c373699639900d7.css">
+
+
+
+
+<link rel="icon" href="/Java-Concurrent/favicon.png" type="image/x-icon">
+
+
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body>
+  <input type="checkbox" style="display: none" id="menu-control" />
+  <main class="flex container">
+
+    <aside class="book-menu fixed">
+      <nav>
+<h2 class="book-brand">
+  <a href="https://hello-world-example.github.io/Java-Concurrent/">Java-Concurrent</a>
+</h2>
+
+
+
+
+
+
+    
+  
+  
+  
+
+  <style>
+  nav ul a[href$="\2fJava-Concurrent\2f docs\2fsun.misc\2fUnsafe\2f "] {
+      color: #004ed0;
+  }
+  </style>
+
+<ul>
+<li><strong>java.lang</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.lang/Thread/">Thread</a></li>
+<li><a href="/Java-Concurrent/docs/java.lang/ThreadLocal/">ThreadLocal</a></li>
+</ul></li>
+<li><strong>sun.misc</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/sun.misc/Unsafe/">Unsafe</a></li>
+</ul></li>
+<li><strong>java.util.concurrent.locks</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/">LockSupport</a></li>
+<li><del>AbstractQueuedSynchronizer</del></li>
+<li><del>ReentrantLock</del></li>
+</ul></li>
+<li><strong>java.util.concurrent</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService</a></li>
+<li><del><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a></del></li>
+<li><del><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoinPool/">ForkJoinPool</a></del></li>
+<li><del>CompletableFuture</del></li>
+<li><del>CountDownLatch</del></li>
+<li><del>CyclicBarrier</del></li>
+<li><del>Phaser</del></li>
+<li><del>Semaphore</del></li>
+</ul></li>
+<li><strong>java.util.concurrent.atomic</strong>
+
+<ul>
+<li><del>AtomicLong</del></li>
+<li><del>LongAdder</del></li>
+</ul></li>
+</ul>
+
+
+
+
+
+
+
+</nav>
+
+
+<script>
+(function() {
+  var menu = document.querySelector("aside.book-menu nav");
+  addEventListener("beforeunload", function(event) {
+    localStorage.setItem("menu.scrollTop", menu.scrollTop);
+  });
+  menu.scrollTop = localStorage.getItem("menu.scrollTop");
+})();
+</script>
+
+    </aside>
+
+    <div class="book-page">
+      <header class="flex align-center justify-between book-header">
+  <label for="menu-control">
+    <img src="/Java-Concurrent/svg/menu.svg" alt="Menu" />
+  </label>
+  <strong>Unsafe</strong>
+</header>
+
+      
+<article class="markdown">
+
+<h1 id="unsafe">Unsafe</h1>
+
+<p><code>Unsafe</code> 是 Java 中可以直接操作内存的工具，属于 <code>sun.*</code> 包下的API。</p>
+
+<blockquote>
+<p><strong>直接操作内存是很危险的一件事，不能通过Java虚拟机的垃圾回收机制进行内存释放，在使用的时候需要注意内存泄漏和溢出，并且Unsafe是一个平台相关的类，在实际开发中建议不要直接使用。</strong></p>
+</blockquote>
+
+<h1 id="获取-unsafe-类实例">获取 Unsafe 类实例</h1>
+
+<p>JDK 对这个类进行了限制，我们不能通过常规 <code>new</code> 的方式去获取该类的实例，也不能通过<code>Unsafe.getUnsafe()</code>获取</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Unsafe</span> {
+
+    <span style="color:#66d9ef">private</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Unsafe</span> theUnsafe;
+    ...
+	<span style="color:#75715e">// 私有构造方法
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> <span style="color:#a6e22e">Unsafe</span>() {
+    }
+
+    <span style="color:#75715e">// 不是 系统 ClassLoader 会 抛出 SecurityException 异常
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> Unsafe <span style="color:#a6e22e">getUnsafe</span>() {
+        Class <span style="color:#a6e22e">var0</span> <span style="color:#f92672">=</span> Reflection.<span style="color:#a6e22e">getCallerClass</span>();
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>VM.<span style="color:#a6e22e">isSystemDomainLoader</span>(var0.<span style="color:#a6e22e">getClassLoader</span>())) {
+            <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> SecurityException(<span style="color:#e6db74">&#34;Unsafe&#34;</span>);
+        } <span style="color:#66d9ef">else</span> {
+            <span style="color:#66d9ef">return</span> theUnsafe;
+        }
+    }
+    
+    <span style="color:#66d9ef">static</span> {
+        ...
+        <span style="color:#75715e">// 但是静态代码块在 类加载后 会在内部实例化 自己
+</span><span style="color:#75715e"></span>        theUnsafe <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Unsafe();
+        ...
+    }
+}</code></pre></div>
+<h2 id="通过反射-获取-unsafe-实例">通过反射 获取 Unsafe 实例</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Field <span style="color:#a6e22e">theUnsafeField</span> <span style="color:#f92672">=</span> Unsafe.<span style="color:#a6e22e">class</span>.<span style="color:#a6e22e">getDeclaredField</span>(<span style="color:#e6db74">&#34;theUnsafe&#34;</span>);
+theUnsafeField.<span style="color:#a6e22e">setAccessible</span>(<span style="color:#66d9ef">true</span>);
+Unsafe <span style="color:#a6e22e">unsafe</span> <span style="color:#f92672">=</span> (Unsafe) theUnsafeField.<span style="color:#a6e22e">get</span>(<span style="color:#66d9ef">null</span>);
+System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(unsafe);</code></pre></div>
+<h2 id="让-引导类加载器-加载">让 引导类加载器 加载</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#f92672">package</span> <span style="color:#a6e22e">xyz</span>.<span style="color:#a6e22e">kail</span>.<span style="color:#a6e22e">javase</span>.<span style="color:#a6e22e">demo</span>;
+
+<span style="color:#f92672">import</span> <span style="color:#a6e22e">sun</span>.<span style="color:#a6e22e">misc</span>.<span style="color:#a6e22e">Unsafe</span>;
+
+<span style="color:#75715e">// 使用以下命令修改 引导类路径
+</span><span style="color:#75715e">// java -Xbootclasspath:$JAVA_HOME/jre/lib/rt.jar:. xyz.kail.javase.demo.Main
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">class</span> Main {
+    <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span>(String[] <span style="color:#a6e22e">args</span>) {
+        Unsafe <span style="color:#a6e22e">unsafe</span> <span style="color:#f92672">=</span> Unsafe.<span style="color:#a6e22e">getUnsafe</span>();
+        System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(unsafe);
+    }
+}</code></pre></div>
+<h1 id="unsafe-api">Unsafe API</h1>
+
+<h2 id="线程">❤ 线程</h2>
+
+<p>Unsafe提供的 <strong><code>park</code>、<code>unpark</code> 是整个Java并发包的基础核心操作方法，其被封装成的 <code>LockSupport</code> 本质最终还是调用的 Unsafe</strong></p>
+
+<ul>
+<li><code>void park(boolean isAbsolute, long time);</code>  挂起线程
+
+<ul>
+<li>isAbsolute 是否是绝对时间</li>
+<li>true 绝对时间，超时时间参数time的单位是<strong>毫秒</strong>，一般用当前时间的毫秒数+超时时间毫秒数作为参数</li>
+<li>false 相对时间，超时时间参数time的单位是<strong>纳秒</strong>，time为0表示一直阻塞，没有超时时间</li>
+</ul></li>
+<li><code>void unpark(Object thread);</code> 终止一个挂起的线程，使其恢复正常</li>
+</ul>
+
+<h2 id="字段">❤ 字段</h2>
+
+<ul>
+<li><code>long objectFieldOffset(Field var1);</code> 对象字段偏移量</li>
+<li><code>long staticFieldOffset(Field var1);</code> 静态字段偏移量</li>
+<li><code>Object staticFieldBase(Field var1);</code> 静态字段所对应的类，读写静态字段需要通过该API获取类</li>
+</ul>
+
+<h2 id="cas-操作-compareandswap">❤ CAS 操作（compareAndSwap）</h2>
+
+<ul>
+<li>参数
+
+<ul>
+<li>obj 被操作的对象</li>
+<li>offset 对象字段的偏移</li>
+<li>expected 当前期待的值</li>
+<li>newValue 新值</li>
+</ul></li>
+
+<li><p>如果当前值是 expected 则设置新值 newValue 并返回 true，否则返回false</p></li>
+
+<li><p>boolean compareAndSwapXxx(obj, offset, expected, newValue)</p>
+
+<ul>
+<li>boolean compareAndSwapObject(Object, long, Object, Object);</li>
+<li>boolean compareAndSwapInt(Object, long, int, int);</li>
+<li>boolean compareAndSwapLong(Object, long, long, long);</li>
+</ul></li>
+
+<li><p>getAndAddXxx(obj, offset, addValue)</p>
+
+<ul>
+<li>getAndAddInt()</li>
+<li>getAndAddLong()</li>
+</ul></li>
+
+<li><p>getAndSetXxx(obj, offset, setValue)</p>
+
+<ul>
+<li>getAndAddInt()</li>
+<li>getAndSetLong()</li>
+<li>getAndSetObject()</li>
+</ul></li>
+</ul>
+
+<h2 id="内存信息">内存信息</h2>
+
+<ul>
+<li><code>int addressSize();</code> 操作系统的直接字节长度，32位是4，64位是8</li>
+<li><code>int pageSize();</code> 操作系统的内存页大小，这个值永远都是2的幂次方<br /></li>
+</ul>
+
+<h2 id="不调用构造方法创建类对象">不调用构造方法创建类对象</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">native</span> Object <span style="color:#a6e22e">allocateInstance</span>(Class<span style="color:#f92672">&lt;?&gt;</span> clazz) <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InstantiationException</span>;</code></pre></div>
+<h2 id="定义类">定义类</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">native</span> Class<span style="color:#f92672">&lt;?&gt;</span> defineClass(String <span style="color:#a6e22e">className</span>, <span style="color:#66d9ef">byte</span>[] <span style="color:#a6e22e">b</span>, <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">offset</span>, <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">len</span>, 
+                                   ClassLoader <span style="color:#a6e22e">loader</span>, ProtectionDomain <span style="color:#a6e22e">protectionDomain</span>);
+
+<span style="color:#75715e">// 定义一个匿名类
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">native</span> Class<span style="color:#f92672">&lt;?&gt;</span> defineAnonymousClass(Class<span style="color:#f92672">&lt;?&gt;</span> targetClass, <span style="color:#66d9ef">byte</span>[] <span style="color:#a6e22e">classBytes</span>, 
+                                            Object[] <span style="color:#a6e22e">cpPatches</span>);</code></pre></div>
+<h2 id="数组">数组</h2>
+
+<ul>
+<li><code>int arrayBaseOffset(Class&lt;?&gt; arrayClass);</code> 获取数组第一个元素的偏移地址<br /></li>
+<li><code>int arrayIndexScale(Class&lt;?&gt; var1);</code> 数组中一个元素占据的内存空间</li>
+</ul>
+
+<p><code>arrayBaseOffset</code>与<code>arrayIndexScale</code>配合使用，可定位数组中每个元素在内存中的位置 ，如：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// int base = Unsafe.ARRAY_INT_BASE_OFFSET
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">base</span> <span style="color:#f92672">=</span> unsafe.<span style="color:#a6e22e">arrayBaseOffset</span>(<span style="color:#66d9ef">int</span>[].<span style="color:#a6e22e">class</span>);
+<span style="color:#75715e">// int scale = Unsafe.ARRAY_INT_INDEX_SCALE;
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">scale</span> <span style="color:#f92672">=</span> unsafe.<span style="color:#a6e22e">arrayIndexScale</span>(<span style="color:#66d9ef">int</span>[].<span style="color:#a6e22e">class</span>);
+
+<span style="color:#66d9ef">int</span>[] <span style="color:#a6e22e">arr</span> <span style="color:#f92672">=</span> {1, 2, 3};
+unsafe.<span style="color:#a6e22e">putInt</span>(arr, (<span style="color:#66d9ef">long</span>) (base <span style="color:#f92672">+</span> scale <span style="color:#f92672">*</span> 2), 100);
+
+<span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">=</span> 0; i <span style="color:#f92672">&lt;</span> arr.<span style="color:#a6e22e">length</span>; i<span style="color:#f92672">++</span>) {
+<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">v</span> <span style="color:#f92672">=</span> unsafe.<span style="color:#a6e22e">getInt</span>(arr, (<span style="color:#66d9ef">long</span>) (base <span style="color:#f92672">+</span> scale <span style="color:#f92672">*</span> i));
+<span style="color:#75715e">// 输出： 1 2 100 
+</span><span style="color:#75715e"></span>System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">print</span>(v <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; &#34;</span>);</code></pre></div>
+<h2 id="读写字段">读写字段</h2>
+
+<ul>
+<li><p><code>putXxx(long address, typeValue)</code></p></li>
+
+<li><p><code>putXxx(Object obj, long offset, typeValue)</code></p></li>
+
+<li><p><code>putXxxVolatile(Object obj, long offset, typeValue)</code> 实现了volatile语义的加强版的 putXxx 方法</p></li>
+
+<li><p><code>putOrderedXxx(Object obj, long offset, typeValue)</code> volatile 会在从主内存读取，同时写的时候会写到主内存，putOrderedXxx 读的语义跟volatile一样，但是写的时候只写工作内存，不写主内存，所以不保证立即对其他线程可见</p></li>
+</ul>
+
+<blockquote>
+<p>编译器会在每一个 volatile 写操作<strong>前面</strong>插入StoreStore内存屏障，在写操作<strong>后面</strong>插入StoreLoad内存屏障，StoreStore内存屏障可以在volatile写之前将前面的其他写刷新回主内存使其对其他处理器可见，StoreLoad内存屏障不但包含了StoreStore屏障的功能，并且还能禁止对Volatile变量的写和后面的Volatile变量读操作的重排序，从而不但能保证将本次volatile写入操作立即回写到主存使其对其他处理器可见，而且还能保证后面的读取操作立即重新从主存中加载以获取最新的值。从这两种屏障可以看出，StoreStore屏障只保证写入的顺序执行，并且只会将屏障之前的其他写刷新到主存使其对其他处理器可见，但是不会将本次的validate写刷新到主存，所以无法保证本次volatile的写入的立即可见性。而StoreLoad屏障就能满足所有的立即可见的要求，但是这也导致了StoreLoad屏障的巨大开销和性能的损耗。</p>
+
+<p>我们可以把它们理解为：Java编译器会在 putOrderedXxx 方法相应的指令前面加上StoreStore指令，从而避免写入操作的重排序但是并不保证本次写入对其他线程立即可见，可能这也是方放名中携带有Ordered字样的体现吧</p>
+
+<p>——<a href="https://pzh9527.iteye.com/blog/2415123">Java并发包基础元件sun.misc.Unsafe</a></p>
+</blockquote>
+
+<ul>
+<li><code>putXxx(long address)</code></li>
+<li><code>getXxx(Object obj, long offset)</code></li>
+<li><code>getXxxVolatile(Object obj, long offset)</code> 实现了volatile语义的加强版的 getXxx 方法</li>
+</ul>
+
+<blockquote>
+<p>参数 offset 通过 <code>objectFieldOffset(Field f)</code> 和 <code>staticFieldOffset(Field f)</code>  获取</p>
+</blockquote>
+
+<h2 id="内存管理">内存管理</h2>
+
+<ul>
+<li><code>long allocateMemory(long bytes)</code> ： 分配指定的大小的内存，返回内存地址</li>
+<li><code>void freeMemory(long address)</code>：释放一块内存，参数为内存地址</li>
+<li><code>long reallocateMemory(long address, long bytes)</code> 根据给定的内存地址address，重新分配指定大小的内存</li>
+</ul>
+
+<h2 id="内存屏障">内存屏障</h2>
+
+<ul>
+<li><code>void loadFence();</code> ：该方法之前的所有 load操作（读） 在内存屏障之前完成</li>
+<li><code>void storeFence();</code>：该方法之前的所有 store操作（写） 在内存屏障之前完成</li>
+<li><code>void fullFence();</code> ：该方法之前的所有 load、store操作 在内存屏障之前完成</li>
+</ul>
+
+<h1 id="参考">参考</h1>
+
+<ul>
+<li><a href="https://pzh9527.iteye.com/blog/2415123">Java并发包基础元件sun.misc.Unsafe</a></li>
+<li><a href="http://ifeve.com/sun-misc-unsafe/">Java Magic. Part 4: sun.misc.Unsafe</a></li>
+<li><a href="http://mishadoff.com/blog/java-magic-part-4-sun-dot-misc-dot-unsafe/">Java Magic. Part 4: sun.misc.Unsafe</a></li>
+</ul>
+</article>
+
+      
+<div class="book-footer justify-end">
+  
+  
+  <div>
+    <a href="https://github.com/hello-world-example/Java-Concurrent/edit/master/HuGo/content/docs/sun.misc/Unsafe.md" target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/edit.svg" alt="Edit" /> Edit this page
+    </a>
+  </div>
+  
+</div>
+
+
+      
+    </div>
+
+    
+  
+
+  <aside class="book-toc level-3 fixed">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#unsafe">Unsafe</a></li>
+<li><a href="#获取-unsafe-类实例">获取 Unsafe 类实例</a>
+<ul>
+<li><a href="#通过反射-获取-unsafe-实例">通过反射 获取 Unsafe 实例</a></li>
+<li><a href="#让-引导类加载器-加载">让 引导类加载器 加载</a></li>
+</ul></li>
+<li><a href="#unsafe-api">Unsafe API</a>
+<ul>
+<li><a href="#线程">❤ 线程</a></li>
+<li><a href="#字段">❤ 字段</a></li>
+<li><a href="#cas-操作-compareandswap">❤ CAS 操作（compareAndSwap）</a></li>
+<li><a href="#内存信息">内存信息</a></li>
+<li><a href="#不调用构造方法创建类对象">不调用构造方法创建类对象</a></li>
+<li><a href="#定义类">定义类</a></li>
+<li><a href="#数组">数组</a></li>
+<li><a href="#读写字段">读写字段</a></li>
+<li><a href="#内存管理">内存管理</a></li>
+<li><a href="#内存屏障">内存屏障</a></li>
+</ul></li>
+<li><a href="#参考">参考</a></li>
+</ul>
+</nav>
+  </aside>
+
+
+
+  </main>
+  
+  
+  
+</body>
+
+</html>

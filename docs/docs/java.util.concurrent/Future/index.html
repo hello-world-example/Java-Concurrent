@@ -56,6 +56,18 @@ https://github.com/alex-shpak/hugo-book
 <li><a href="/Java-Concurrent/docs/java.lang/Thread/">Thread</a></li>
 <li><a href="/Java-Concurrent/docs/java.lang/ThreadLocal/">ThreadLocal</a></li>
 </ul></li>
+<li><strong>sun.misc</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/sun.misc/Unsafe/">Unsafe</a></li>
+</ul></li>
+<li><strong>java.util.concurrent.locks</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/">LockSupport</a></li>
+<li><del>AbstractQueuedSynchronizer</del></li>
+<li><del>ReentrantLock</del></li>
+</ul></li>
 <li><strong>java.util.concurrent</strong>
 
 <ul>
@@ -67,10 +79,12 @@ https://github.com/alex-shpak/hugo-book
 <li><del>CyclicBarrier</del></li>
 <li><del>Phaser</del></li>
 <li><del>Semaphore</del></li>
-<li><del><strong>atomic</strong>.AtomicLong</del></li>
-<li><del><strong>atomic</strong>.LongAdder</del></li>
-<li><del><strong>locks</strong>.AbstractQueuedSynchronizer</del></li>
-<li><del><strong>locks</strong>.ReentrantLock</del></li>
+</ul></li>
+<li><strong>java.util.concurrent.atomic</strong>
+
+<ul>
+<li><del>AtomicLong</del></li>
+<li><del>LongAdder</del></li>
 </ul></li>
 </ul>
 
@@ -116,19 +130,34 @@ https://github.com/alex-shpak/hugo-book
 
 <h2 id="future-接口">Future 接口</h2>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">interface</span> Future<span style="color:#f92672">&lt;</span>V<span style="color:#f92672">&gt;</span> {
-  
-  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isDone</span>();
-  
-  V <span style="color:#a6e22e">get</span>() <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span>, ExecutionException;
-
-  V <span style="color:#a6e22e">get</span>(<span style="color:#66d9ef">long</span> <span style="color:#a6e22e">timeout</span>, TimeUnit <span style="color:#a6e22e">unit</span>)
-    <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span>, ExecutionException, TimeoutException;
-  
-  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">cancel</span>(<span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">mayInterruptIfRunning</span>);
-
-  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isCancelled</span>();
-
+  <span style="color:#75715e">// 等待任务结束，获取结果
+</span><span style="color:#75715e"></span>  V <span style="color:#a6e22e">get</span>() <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span>, ExecutionException;
+  <span style="color:#75715e">// 获取结果，设置超时时间
+</span><span style="color:#75715e"></span>  V <span style="color:#a6e22e">get</span>(<span style="color:#66d9ef">long</span> <span style="color:#a6e22e">timeout</span>, TimeUnit <span style="color:#a6e22e">unit</span>) <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span>, ExecutionException, TimeoutException;
+  <span style="color:#75715e">// 取消任务的执行
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">cancel</span>(<span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">mayInterruptIfRunning</span>);
+  <span style="color:#75715e">// 正常完成前取消，返回 true
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isCancelled</span>();
+  <span style="color:#75715e">// 任务正常终止、异常或取消，返回true
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isDone</span>();
 }</code></pre></div>
+<h2 id="继承关系">继承关系</h2>
+
+<ul>
+<li><strong>Future</strong> (java.util.concurrent)
+
+<ul>
+<li>RunnableFuture (java.util.concurrent)
+
+<ul>
+<li><strong>FutureTask</strong> (java.util.concurrent)</li>
+</ul></li>
+<li><strong>ForkJoinTask</strong> (java.util.concurrent)</li>
+<li><strong>CompletableFuture</strong> (java.util.concurrent)</li>
+<li>&hellip;</li>
+</ul></li>
+</ul>
+
 <h2 id="缺点">缺点</h2>
 
 <p>虽然 JDK5 新增的 <code>Future</code> 用于描述一个异步计算的结果，但是对于结果的获取却是很不方便，只能通过 <strong>阻塞</strong> 或者 <strong>轮询</strong> 的方式得到任务的结果。</p>
@@ -184,6 +213,7 @@ https://github.com/alex-shpak/hugo-book
 <li><a href="#future">Future</a>
 <ul>
 <li><a href="#future-接口">Future 接口</a></li>
+<li><a href="#继承关系">继承关系</a></li>
 <li><a href="#缺点">缺点</a></li>
 <li><a href="#改进方案">改进方案</a></li>
 <li><a href="#read-more">Read More</a></li>

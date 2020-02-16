@@ -5,6 +5,12 @@ headless: true
 - **java.lang**
   - [Thread]({{< relref "/docs/java.lang/Thread.md" >}})
   - [ThreadLocal]({{< relref "/docs/java.lang/ThreadLocal.md" >}})
+- **sun.misc**
+  - [Unsafe]({{< relref "/docs/sun.misc/Unsafe.md" >}})
+- **java.util.concurrent.locks**
+  - [LockSupport]({{< relref "/docs/java.util.concurrent/locks/LockSupport.md" >}})
+  - ~~AbstractQueuedSynchronizer~~
+  - ~~ReentrantLock~~
 - **java.util.concurrent**
   - [ExecutorService]({{< relref "/docs/java.util.concurrent/ExecutorService.md" >}})
   - ~~[Future]({{< relref "/docs/java.util.concurrent/Future.md" >}})~~
@@ -14,8 +20,6 @@ headless: true
   - ~~CyclicBarrier~~
   - ~~Phaser~~
   - ~~Semaphore~~
-  - ~~**atomic**.AtomicLong~~
-  - ~~**atomic**.LongAdder~~
-  - ~~**locks**.AbstractQueuedSynchronizer~~
-  - ~~**locks**.ReentrantLock~~
-
+- **java.util.concurrent.atomic**
+  - ~~AtomicLong~~
+  - ~~LongAdder~~

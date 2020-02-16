@@ -54,7 +54,8 @@ final Thread thread = new Thread(() -&amp;gt; System.out.println(System.currentT
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/CompletableFuture/</guid>
-      <description> CompletableFuture Read More  强大的 CompletableFuture  </description>
+      <description> CompletableFuture https://www.jianshu.com/p/b3c4dd85901e
+Read More  强大的 CompletableFuture  </description>
     </item>
     
     <item>
@@ -91,7 +92,7 @@ final Thread thread = new Thread(() -&amp;gt; System.out.println(System.currentT
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/ForkJoinPool/</guid>
-      <description> ForkJoinPool </description>
+      <description>ForkJoinPool https://www.cnblogs.com/mxh-java/p/12244318.html</description>
     </item>
     
     <item>
@@ -100,10 +101,9 @@ final Thread thread = new Thread(() -&amp;gt; System.out.println(System.currentT
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/Future/</guid>
-      <description> Future  en java.util.concurrent.Future
+      <description>Future  en java.util.concurrent.Future
 zh java.util.concurrent.Future
- Future 接口 public interface Future&amp;lt;V&amp;gt; { boolean isDone(); V get() throws InterruptedException, ExecutionException; V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException; boolean cancel(boolean mayInterruptIfRunning); boolean isCancelled(); } 缺点 虽然 JDK5 新增的 Future 用于描述一个异步计算的结果，但是对于结果的获取却是很不方便，只能通过 阻塞 或者 轮询 的方式得到任务的结果。
- 阻塞的方式显然和我们的异步编程的初衷相违背 轮询的方式又会耗费无谓的 CPU 资源，而且也不能及时地得到计算结果  改进方案  Guava ListenableFuture JDK8 CompletableFuture  Read More  从 Java Future 到 Guava ListenableFuture 实现异步调用  </description>
+ Future 接口 public interface Future&amp;lt;V&amp;gt; { // 等待任务结束，获取结果  V get() throws InterruptedException, ExecutionException; // 获取结果，设置超时时间  V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException; // 取消任务的执行  boolean cancel(boolean mayInterruptIfRunning); // 正常完成前取消，返回 true  boolean isCancelled(); // 任务正常终止、异常或取消，返回true  boolean isDone(); } 继承关系  Future (java.util.concurrent)  RunnableFuture (java.util.concurrent)  FutureTask (java.util.concurrent)  ForkJoinTask (java.util.concurrent) CompletableFuture (java.util.concurrent) &amp;hellip;   缺点 虽然 JDK5 新增的 Future 用于描述一个异步计算的结果，但是对于结果的获取却是很不方便，只能通过 阻塞 或者 轮询 的方式得到任务的结果。</description>
     </item>
     
     <item>
@@ -113,6 +113,15 @@ zh java.util.concurrent.Future
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/locks/AbstractQueuedSynchronizer/</guid>
       <description></description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/</guid>
+      <description> LockSupport </description>
     </item>
     
     <item>
@@ -140,6 +149,18 @@ zh java.util.concurrent.Future
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/Semaphore/</guid>
       <description></description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://hello-world-example.github.io/Java-Concurrent/docs/sun.misc/Unsafe/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://hello-world-example.github.io/Java-Concurrent/docs/sun.misc/Unsafe/</guid>
+      <description>Unsafe Unsafe 是 Java 中可以直接操作内存的工具，属于 sun.* 包下的API。
+ 直接操作内存是很危险的一件事，不能通过Java虚拟机的垃圾回收机制进行内存释放，在使用的时候需要注意内存泄漏和溢出，并且Unsafe是一个平台相关的类，在实际开发中建议不要直接使用。
+ 获取 Unsafe 类实例 JDK 对这个类进行了限制，我们不能通过常规 new 的方式去获取该类的实例，也不能通过Unsafe.getUnsafe()获取
+public final class Unsafe { private static final Unsafe theUnsafe; ... // 私有构造方法  private Unsafe() { } // 不是 系统 ClassLoader 会 抛出 SecurityException 异常  public static Unsafe getUnsafe() { Class var0 = Reflection.getCallerClass(); if (!VM.isSystemDomainLoader(var0.getClassLoader())) { throw new SecurityException(&amp;#34;Unsafe&amp;#34;); } else { return theUnsafe; } } static { ... // 但是静态代码块在 类加载后 会在内部实例化 自己  theUnsafe = new Unsafe(); .</description>
     </item>
     
   </channel>

@@ -63,6 +63,11 @@
   </url>
   
   <url>
+    <loc>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/locks/ReentrantLock/</loc>
     <priority>0</priority>
   </url>
@@ -74,6 +79,11 @@
   
   <url>
     <loc>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/Semaphore/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://hello-world-example.github.io/Java-Concurrent/docs/sun.misc/Unsafe/</loc>
     <priority>0</priority>
   </url>
   
