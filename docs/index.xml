@@ -131,7 +131,7 @@ zh java.util.concurrent.Future
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/</guid>
       <description>LockSupport  zh java.util.concurrent.locks.LockSupport 官方文档的描述也很清楚
-  LockSupport 是基于 sun.misc.Unsafe 封装的 线程阻塞工具类 主要提供 park 和 unpark ，即 阻塞 和 解除阻塞 两类功能 类似于 Object 的 wait 和 notify ，但是不需要获取 锁对象，也不会抛出中断异常 类似于 Thread 的 suspend 和 resume 过时方法，不会有产生死锁的副作用 park 和 unpark 可以理解为 操作线程的许可标示（true:许可 / false:不许可）  一个线程只有一个许可，默认是 false，调用 park 直接阻塞 假如先调动 unpark ，则线程的许可为 true，调用 park 直接返回，不阻塞 因为一个线程只有一个许可，调用多次 unpark 与1次的效果是一样 假如一开始没有 许可，调用 park 阻塞，需要调用 unpark 给予许可同行，解除阻塞 解除同行后 许可 变为 禁止，下次 park 曾然阻塞   一些示例 // 假如先调动 unpark ，则线程的许可为 true，调用 park 直接返回，不阻塞 { LockSupport.</description>
+  LockSupport 是基于 sun.misc.Unsafe 封装的 线程阻塞工具类 主要提供 park 和 unpark ，即 阻塞 和 解除阻塞 两类功能 类似于 Object 的 wait 和 notify ，但是不需要获取 锁对象，也不会抛出中断异常 类似于 Thread 的 suspend 和 resume 过时方法，不会有产生死锁的副作用 park 和 unpark 可以理解为 操作线程的许可标示（true:许可 / false:不许可）  一个线程只有一个许可，默认是 false，调用 park 直接阻塞 假如先调动 unpark ，则线程的许可为 true，调用 park 直接返回，不阻塞 因为一个线程只有一个许可，调用多次 unpark 与1次的效果是一样 假如一开始没有 许可，调用 park 阻塞，需要调用 unpark 给予许可通行，解除阻塞 解除通行 park 通过后 许可又变为 禁止，下次 park 曾然阻塞   一些示例 // 假如先调动 unpark ，则线程的许可为 true，调用 park 直接返回，不阻塞 { LockSupport.</description>
     </item>
     
     <item>

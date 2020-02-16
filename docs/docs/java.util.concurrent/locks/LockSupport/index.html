@@ -137,8 +137,8 @@ https://github.com/alex-shpak/hugo-book
 <li>一个线程只有一个许可，默认是 false，调用  <code>park</code>  直接阻塞</li>
 <li>假如先调动  <code>unpark</code> ，则线程的许可为 true，调用  <code>park</code>  直接返回，不阻塞</li>
 <li>因为一个线程只有一个许可，调用多次  <code>unpark</code> 与1次的效果是一样</li>
-<li>假如一开始没有 许可，调用  <code>park</code>  阻塞，需要调用   <code>unpark</code>  给予许可同行，解除阻塞</li>
-<li>解除同行后 许可 变为 禁止，下次  <code>park</code>  曾然阻塞</li>
+<li>假如一开始没有 许可，调用  <code>park</code>  阻塞，需要调用   <code>unpark</code>  给予许可通行，解除阻塞</li>
+<li>解除通行 <code>park</code> 通过后 许可又变为 禁止，下次  <code>park</code>  曾然阻塞</li>
 </ul></li>
 </ul>
 
@@ -220,8 +220,8 @@ $ <span style="color:#a6e22e">jcmd</span> <span style="color:#f92672">&lt;</span
   
   <div>
     
-    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/492e3ef9b5e9ba3b6137a1294daf8228067d8ce1" title='Last modified Feb 16, 2020 by 杨凯彬' target="_blank" rel="noopener">
-      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 16, 2020
+    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/653fb838eea918a8067e27cf509c581ecae74891" title='Last modified Feb 17, 2020 by 杨凯彬' target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 17, 2020
     </a>
   </div>
   
