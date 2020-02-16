@@ -42,7 +42,7 @@ System.out.println("Main 方法结束");
 
 中断操作只是一个标志位，并不会立即终止当前线程，需要自身在业务逻辑中判断 `thread.isInterrupted()`，并确定是否执行后续的代码。
 
-### Thread.interrupted / thread.isInterrupted
+### Thread.interrupted() / thread.isInterrupted()
 
 用于判断当前线程是否被标记为中断，需要注意的是这两个方法的区别
 
@@ -181,7 +181,7 @@ public class AllStackTracesThreadMain {
 
 ```
 
-### Thread.dumpStack
+### Thread.dumpStack()
 
 将当前线程的堆栈跟踪打印至标准错误流。该方法仅用于调试。
 

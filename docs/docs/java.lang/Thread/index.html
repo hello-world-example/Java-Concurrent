@@ -148,7 +148,7 @@ System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">printl
 
 <p>中断操作只是一个标志位，并不会立即终止当前线程，需要自身在业务逻辑中判断 <code>thread.isInterrupted()</code>，并确定是否执行后续的代码。</p>
 
-<h3 id="thread-interrupted-thread-isinterrupted">Thread.interrupted / thread.isInterrupted</h3>
+<h3 id="thread-interrupted-thread-isinterrupted">Thread.interrupted() / thread.isInterrupted()</h3>
 
 <p>用于判断当前线程是否被标记为中断，需要注意的是这两个方法的区别</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// Thread.interrupted();
@@ -300,7 +300,7 @@ thread.<span style="color:#a6e22e">start</span>();</code></pre></div>
         });
     }
 }</code></pre></div>
-<h3 id="thread-dumpstack">Thread.dumpStack</h3>
+<h3 id="thread-dumpstack">Thread.dumpStack()</h3>
 
 <p>将当前线程的堆栈跟踪打印至标准错误流。该方法仅用于调试。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">dumpStack</span>() {
@@ -359,8 +359,8 @@ thread.<span style="color:#a6e22e">start</span>();</code></pre></div>
   
   <div>
     
-    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/0f2a3ff83effc1c2a2347aeb51e8310c59b1e843" title='Last modified Feb 15, 2020 by 杨凯彬' target="_blank" rel="noopener">
-      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 15, 2020
+    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/1f52dcf230a1ea822ff082ba4decaabc159f90f1" title='Last modified Feb 16, 2020 by 杨凯彬' target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 16, 2020
     </a>
   </div>
   
@@ -391,12 +391,12 @@ thread.<span style="color:#a6e22e">start</span>();</code></pre></div>
 <li><a href="#thread-join">thread.join()</a></li>
 <li><a href="#thread-yield">Thread.yield()</a></li>
 <li><a href="#thread-interrupt">thread.interrupt()</a></li>
-<li><a href="#thread-interrupted-thread-isinterrupted">Thread.interrupted / thread.isInterrupted</a></li>
+<li><a href="#thread-interrupted-thread-isinterrupted">Thread.interrupted() / thread.isInterrupted()</a></li>
 <li><a href="#thread-isalive">thread.isAlive()</a></li>
 <li><a href="#uncaughtexceptionhandler">UncaughtExceptionHandler</a></li>
 <li><a href="#thread-getstacktrace">thread.getStackTrace()</a></li>
 <li><a href="#thread-getallstacktraces">Thread.getAllStackTraces()</a></li>
-<li><a href="#thread-dumpstack">Thread.dumpStack</a></li>
+<li><a href="#thread-dumpstack">Thread.dumpStack()</a></li>
 </ul></li>
 <li><a href="#废弃的方法">废弃的方法</a></li>
 </ul></li>
