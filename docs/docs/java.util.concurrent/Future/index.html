@@ -67,14 +67,15 @@ https://github.com/alex-shpak/hugo-book
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/">LockSupport</a></li>
 <li><del>AbstractQueuedSynchronizer</del></li>
 <li><del>ReentrantLock</del></li>
+<li><del>StampedLock</del></li>
 </ul></li>
 <li><strong>java.util.concurrent</strong>
 
 <ul>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService</a></li>
-<li><del><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a></del></li>
-<li><del><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoinPool/">ForkJoinPool</a></del></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a></li>
 <li><del>CompletableFuture</del></li>
+<li><del><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoinPool/">ForkJoinPool</a></del></li>
 <li><del>CountDownLatch</del></li>
 <li><del>CyclicBarrier</del></li>
 <li><del>Phaser</del></li>
@@ -129,6 +130,8 @@ https://github.com/alex-shpak/hugo-book
 </blockquote>
 
 <h2 id="future-接口">Future 接口</h2>
+
+<p>Future 接口是<strong>对异步行为的抽象</strong>，用来<strong>表示异步计算的结果</strong>，接口比较简单，如下：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">interface</span> Future<span style="color:#f92672">&lt;</span>V<span style="color:#f92672">&gt;</span> {
   <span style="color:#75715e">// 等待任务结束，获取结果
 </span><span style="color:#75715e"></span>  V <span style="color:#a6e22e">get</span>() <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span>, ExecutionException;
@@ -147,7 +150,7 @@ https://github.com/alex-shpak/hugo-book
 <li><strong>Future</strong> (java.util.concurrent)
 
 <ul>
-<li>RunnableFuture (java.util.concurrent)
+<li>RunnableFuture (java.util.concurrent) <strong>extends Runnable</strong>
 
 <ul>
 <li><strong>FutureTask</strong> (java.util.concurrent)</li>
@@ -158,7 +161,202 @@ https://github.com/alex-shpak/hugo-book
 </ul></li>
 </ul>
 
-<h2 id="缺点">缺点</h2>
+<h2 id="futuretask-简介">FutureTask 简介</h2>
+
+<p>FutureTask 是 Future 接口的基本实现，包装了 <code>Callable</code> 和 <code>Runnable</code> (内部转换成  Callable ) 接口对象。</p>
+
+<ul>
+<li>当任务计算完成时，可通过 <code>get</code> 直接获取结果</li>
+<li>当计算没有完成时，<code>get</code> 方法会一直阻塞直到任务转入完成状态</li>
+<li>一旦完成计算，不能够重新开始或取消计算</li>
+</ul>
+
+<p>一般通过 <code>Executor</code> 线程池 来执行，也可传递给 <code>Thread</code> 对象执行。如果在主线程中需要执行比较耗时的操作时，但又不想阻塞主线程时，可以把这些作业交给 <code>FutureTask</code> 在后台完成，当主线程将来需要时，就可以通过<code>Future</code> 对象获得后台作业的计算结果或者执行状态。</p>
+
+<h3 id="通过-executor-执行">通过 Executor 执行</h3>
+
+<p>把 <code>threadExecutor.submit</code> 代码拆开，即是一下代码</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">ExecutorService</span> threadExecutor <span style="color:#f92672">=</span> Executors.<span style="color:#a6e22e">newSingleThreadExecutor</span>();
+
+FutureTask<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">futureTask</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> FutureTask<span style="color:#f92672">&lt;&gt;</span>(() <span style="color:#f92672">-&gt;</span> {
+    Thread.<span style="color:#a6e22e">sleep</span>(3000); <span style="color:#75715e">// 任务执行需要 3秒
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;ok&#34;</span>;
+});
+
+<span style="color:#75715e">// 提交任务
+</span><span style="color:#75715e"></span>threadExecutor.<span style="color:#a6e22e">execute</span>(futureTask);
+
+System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;waiting.&#34;</span> <span style="color:#f92672">+</span> System.<span style="color:#a6e22e">currentTimeMillis</span>());
+<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">String</span> result <span style="color:#f92672">=</span> futureTask.<span style="color:#a6e22e">get</span>(); <span style="color:#75715e">// 阻塞 等待执行结果
+</span><span style="color:#75715e"></span>System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(result <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;......&#34;</span> <span style="color:#f92672">+</span> System.<span style="color:#a6e22e">currentTimeMillis</span>());
+
+threadExecutor.<span style="color:#a6e22e">shutdown</span>();
+
+<span style="color:#75715e">// 输出
+</span><span style="color:#75715e">// waiting.15818730 27 104
+</span><span style="color:#75715e"></span><span style="color:#f92672">//</span> ok......<span style="color:#a6e22e">15818730</span> <span style="color:#a6e22e">30</span> 105</code></pre></div>
+<h3 id="通过-thread-执行">通过 Thread 执行</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">FutureTask<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">futureTask</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> FutureTask<span style="color:#f92672">&lt;&gt;</span>(() <span style="color:#f92672">-&gt;</span> {
+    Thread.<span style="color:#a6e22e">sleep</span>(3000); <span style="color:#75715e">// 任务执行需要 3秒
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;ok&#34;</span>;
+});
+
+<span style="color:#75715e">// 开启线程执行
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">new</span> Thread(futureTask).<span style="color:#a6e22e">start</span>();
+<span style="color:#75715e">// 这样也行，相当于 new Runnable(){ futureTask.run(); }
+</span><span style="color:#75715e">// new Thread(futureTask::run).start();
+</span><span style="color:#75715e"></span>
+System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;waiting.&#34;</span> <span style="color:#f92672">+</span> System.<span style="color:#a6e22e">currentTimeMillis</span>());
+<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">String</span> result <span style="color:#f92672">=</span> futureTask.<span style="color:#a6e22e">get</span>(); <span style="color:#75715e">// 等待执行结果
+</span><span style="color:#75715e"></span>System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(result <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;......&#34;</span> <span style="color:#f92672">+</span> System.<span style="color:#a6e22e">currentTimeMillis</span>());
+
+<span style="color:#75715e">// 输出
+</span><span style="color:#75715e">// waiting.15818733 25 457
+</span><span style="color:#75715e"></span><span style="color:#f92672">//</span> ok......<span style="color:#a6e22e">15818733</span> <span style="color:#a6e22e">28</span> 459</code></pre></div>
+<h2 id="futuretask-原理">FutureTask 原理</h2>
+
+<h3 id="内部状态">内部状态</h3>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>NEW</code></td>
+<td><strong>初始状态</strong>，<code>new FutureTask</code> 的时候设置</td>
+<td></td>
+</tr>
+
+<tr>
+<td><code>COMPLETING</code></td>
+<td>标示任务执行完成，但是暂未保存结果的瞬时状态，<br /><strong>正常结束 或 异常结束</strong> 时先变为 <code>COMPLETING</code>，再获取结果内部保存，最后 设置为最终状态</td>
+<td></td>
+</tr>
+
+<tr>
+<td><code>NORMAL</code></td>
+<td><strong>正常结束</strong> 的 最终状态</td>
+<td></td>
+</tr>
+
+<tr>
+<td><code>EXCEPTIONAL</code></td>
+<td><strong>异常结束</strong> 的 最终状态</td>
+<td></td>
+</tr>
+
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+
+<tr>
+<td><code>CANCELLED</code></td>
+<td><strong>任务取消</strong>，<code>cancel(false)</code></td>
+<td></td>
+</tr>
+
+<tr>
+<td><code>INTERRUPTING</code></td>
+<td><strong>任务中断取消</strong>的<strong>中间状态</strong>，调用 <code>thread.interrupt()</code> 置为 <code>INTERRUPTED</code></td>
+<td></td>
+</tr>
+
+<tr>
+<td><code>INTERRUPTED</code></td>
+<td><strong>任务中断取消</strong>的<strong>最终状态</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="可能的状态转换">可能的状态转换</h3>
+
+<ul>
+<li><code>NEW -&gt; COMPLETING -&gt; NORMAL</code> ：正常结束</li>
+<li><code>NEW -&gt; COMPLETING -&gt; EXCEPTIONAL</code> ：异常结束</li>
+<li><code>NEW -&gt; CANCELLED</code> ：任务取消，<code>cancel(false)</code></li>
+<li><code>NEW -&gt; INTERRUPTING -&gt; INTERRUPTED</code>：任务 <code>thread.interrupt()</code> 后取消，<code>cancel(true)</code></li>
+</ul>
+
+<h3 id="状态的维护">状态的维护</h3>
+
+<ul>
+<li>主要通过 <code>run</code> / <code>cancel</code> 方法对内部状态的变更进行维护</li>
+<li><code>run</code> 方法 是一个同步方法，且 同步调用 <code>Callable</code> 任务的 <code>call</code> 方法获取结果，<strong>整个流程都是同步的</strong></li>
+<li>异步执行的效果主要通过 Thread 线程 实现，<strong>相对主线程是异步的，内部仍然是同步</strong></li>
+<li>调用 <code>get</code> 方法的时候，内部会通过状态判断是否阻塞等待（通过 <code>LockSupport.park</code> 阻塞）</li>
+<li><code>run</code> / <code>cancel</code>  最后会通过 <code>LockSupport.unpark</code> 解除线程阻塞</li>
+</ul>
+
+<blockquote>
+<p><code>LockSupport.park</code> / <code>LockSupport.unpark</code> 原理详见 <a href="../locks/LockSupport/">LockSupport</a></p>
+</blockquote>
+
+<h2 id="异步调用的示例">❤ 异步调用的示例</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a6e22e">@SneakyThrows</span>
+<span style="color:#66d9ef">private</span> <span style="color:#a6e22e">static</span> String <span style="color:#a6e22e">sleep</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">sleep</span>) {
+    <span style="color:#66d9ef">if</span> (sleep <span style="color:#f92672">==</span> 0) { <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> IllegalArgumentException(<span style="color:#e6db74">&#34;&#34;</span> <span style="color:#f92672">+</span> sleep); }
+    TimeUnit.<span style="color:#a6e22e">SECONDS</span>.<span style="color:#a6e22e">sleep</span>(sleep);
+    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(Thread.<span style="color:#a6e22e">currentThread</span>().<span style="color:#a6e22e">getName</span>() <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; 耗时 &#34;</span> <span style="color:#f92672">+</span> sleep);
+    <span style="color:#66d9ef">return</span> String.<span style="color:#a6e22e">valueOf</span>(sleep);
+}
+
+<span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span>(String[] <span style="color:#a6e22e">args</span>) <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span> {
+    <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">ExecutorService</span> threadPool <span style="color:#f92672">=</span> Executors.<span style="color:#a6e22e">newCachedThreadPool</span>();
+
+    List<span style="color:#f92672">&lt;</span>Callable<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;&gt;</span> <span style="color:#a6e22e">tasks</span> <span style="color:#f92672">=</span> Arrays.<span style="color:#a6e22e">asList</span>(
+            () <span style="color:#f92672">-&gt;</span> sleep(4),
+            () <span style="color:#f92672">-&gt;</span> sleep(0), <span style="color:#75715e">// 任务 2 会抛异常
+</span><span style="color:#75715e"></span>            () <span style="color:#f92672">-&gt;</span> sleep(3)
+    );
+
+    <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">long</span> start <span style="color:#f92672">=</span> System.<span style="color:#a6e22e">currentTimeMillis</span>();
+    <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">List</span><span style="color:#f92672">&lt;</span>Future<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;&gt;</span> <span style="color:#a6e22e">futures</span> <span style="color:#f92672">=</span> threadPool.<span style="color:#a6e22e">invokeAll</span>(tasks); <span style="color:#75715e">// invokeAll 同步执行
+</span><span style="color:#75715e"></span>    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;总耗时 &#34;</span> <span style="color:#f92672">+</span> (System.<span style="color:#a6e22e">currentTimeMillis</span>() <span style="color:#f92672">-</span> start));
+  
+    <span style="color:#75715e">// 三个任务并发执行的结果，封装成新的对象，一旦任务执行完成，获取结果非常快
+</span><span style="color:#75715e"></span>    start <span style="color:#f92672">=</span> System.<span style="color:#a6e22e">currentTimeMillis</span>();
+    Map<span style="color:#f92672">&lt;</span>String, String<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">result</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> HashMap<span style="color:#f92672">&lt;&gt;</span>();
+    result.<span style="color:#a6e22e">put</span>(<span style="color:#e6db74">&#34;a&#34;</span>, get(futures.<span style="color:#a6e22e">get</span>(0)));
+    result.<span style="color:#a6e22e">put</span>(<span style="color:#e6db74">&#34;b&#34;</span>, get(futures.<span style="color:#a6e22e">get</span>(1)));
+    result.<span style="color:#a6e22e">put</span>(<span style="color:#e6db74">&#34;c&#34;</span>, get(futures.<span style="color:#a6e22e">get</span>(2)));
+    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(result);
+    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;获取数据耗时 &#34;</span> <span style="color:#f92672">+</span> (System.<span style="color:#a6e22e">currentTimeMillis</span>() <span style="color:#f92672">-</span> start));
+
+    threadPool.<span style="color:#a6e22e">shutdown</span>();
+}
+
+<span style="color:#66d9ef">private</span> <span style="color:#a6e22e">static</span> <span style="color:#f92672">&lt;</span>V<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">V</span> get(Future<span style="color:#f92672">&lt;</span>V<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">future</span>) {
+    <span style="color:#66d9ef">try</span> {
+        <span style="color:#66d9ef">return</span> future.<span style="color:#a6e22e">get</span>();
+    } <span style="color:#66d9ef">catch</span> (InterruptedException <span style="color:#f92672">|</span> ExecutionException <span style="color:#a6e22e">e</span>) {
+        e.<span style="color:#a6e22e">printStackTrace</span>();
+    }
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span>;
+}</code></pre></div>
+<blockquote>
+<p>pool-1-thread-3 耗时 3</p>
+
+<p>pool-1-thread-1 耗时 4</p>
+
+<p>java.util.concurrent.ExecutionException: java.lang.IllegalArgumentException: 0 &hellip;&hellip;..</p>
+
+<p>总耗时 4009</p>
+
+<p>{a=4, b=null, c=3}</p>
+
+<p>获取数据耗时 0</p>
+</blockquote>
+
+<h2 id="future-的不足">Future 的不足</h2>
 
 <p>虽然 JDK5 新增的 <code>Future</code> 用于描述一个异步计算的结果，但是对于结果的获取却是很不方便，只能通过 <strong>阻塞</strong> 或者 <strong>轮询</strong> 的方式得到任务的结果。</p>
 
@@ -172,6 +370,13 @@ https://github.com/alex-shpak/hugo-book
 <ul>
 <li>Guava <code>ListenableFuture</code></li>
 <li>JDK8 <code>CompletableFuture</code></li>
+<li>基于 Reactive Streams 的框架
+
+<ul>
+<li><a href="/Reactor">Reactor</a></li>
+<li>RxJava</li>
+<li>..</li>
+</ul></li>
 </ul>
 
 <h2 id="read-more">Read More</h2>
@@ -214,7 +419,19 @@ https://github.com/alex-shpak/hugo-book
 <ul>
 <li><a href="#future-接口">Future 接口</a></li>
 <li><a href="#继承关系">继承关系</a></li>
-<li><a href="#缺点">缺点</a></li>
+<li><a href="#futuretask-简介">FutureTask 简介</a>
+<ul>
+<li><a href="#通过-executor-执行">通过 Executor 执行</a></li>
+<li><a href="#通过-thread-执行">通过 Thread 执行</a></li>
+</ul></li>
+<li><a href="#futuretask-原理">FutureTask 原理</a>
+<ul>
+<li><a href="#内部状态">内部状态</a></li>
+<li><a href="#可能的状态转换">可能的状态转换</a></li>
+<li><a href="#状态的维护">状态的维护</a></li>
+</ul></li>
+<li><a href="#异步调用的示例">❤ 异步调用的示例</a></li>
+<li><a href="#future-的不足">Future 的不足</a></li>
 <li><a href="#改进方案">改进方案</a></li>
 <li><a href="#read-more">Read More</a></li>
 </ul></li>

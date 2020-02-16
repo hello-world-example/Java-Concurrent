@@ -10,8 +10,6 @@ public class ExecutorsMain {
         final Thread thread = new Thread(() -> {
             System.out.println(Thread.State.RUNNABLE + ":" + Thread.currentThread().getState());
             sleep(1);
-
-            lock(1);
         });
 
 
@@ -19,7 +17,6 @@ public class ExecutorsMain {
         thread.start();
 
         new Thread(() -> {
-            lock(3_000);
             System.out.println(thread.getState());
         }).start();
 
@@ -27,12 +24,6 @@ public class ExecutorsMain {
         System.out.println(Thread.State.TERMINATED + ":" + thread.getState());
     }
 
-    @SneakyThrows
-    private synchronized static void lock(int sleep) {
-        ExecutorsMain.class.wait(sleep);
-
-        ExecutorsMain.class.notifyAll();
-    }
 
     @SneakyThrows
     private static void sleep(int sleep) {

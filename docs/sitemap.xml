@@ -73,6 +73,11 @@
   </url>
   
   <url>
+    <loc>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/locks/StampedLock/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/Phaser/</loc>
     <priority>0</priority>
   </url>

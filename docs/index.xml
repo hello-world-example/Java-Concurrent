@@ -15,7 +15,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/_sidebar/</guid>
-      <description> java.lang  Thread ThreadLocal  sun.misc  Unsafe  java.util.concurrent.locks  LockSupport AbstractQueuedSynchronizer ReentrantLock  java.util.concurrent  ExecutorService Future ForkJoinPool CompletableFuture CountDownLatch CyclicBarrier Phaser Semaphore  java.util.concurrent.atomic  AtomicLong LongAdder   </description>
+      <description> java.lang  Thread ThreadLocal  sun.misc  Unsafe  java.util.concurrent.locks  LockSupport AbstractQueuedSynchronizer ReentrantLock StampedLock  java.util.concurrent  ExecutorService Future CompletableFuture ForkJoinPool CountDownLatch CyclicBarrier Phaser Semaphore  java.util.concurrent.atomic  AtomicLong LongAdder   </description>
     </item>
     
     <item>
@@ -112,7 +112,8 @@ Read More  强大的 CompletableFuture  </description>
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/Future/</guid>
       <description>Future  en java.util.concurrent.Future
 zh java.util.concurrent.Future
- Future 接口 public interface Future&amp;lt;V&amp;gt; { // 等待任务结束，获取结果  V get() throws InterruptedException, ExecutionException; // 获取结果，设置超时时间  V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException; // 取消任务的执行  boolean cancel(boolean mayInterruptIfRunning); // 正常完成前取消，返回 true  boolean isCancelled(); // 任务正常终止、异常或取消，返回true  boolean isDone(); } 继承关系  Future (java.util.concurrent)  RunnableFuture (java.util.concurrent)  FutureTask (java.util.concurrent)  ForkJoinTask (java.util.concurrent) CompletableFuture (java.util.concurrent) &amp;hellip;   缺点 虽然 JDK5 新增的 Future 用于描述一个异步计算的结果，但是对于结果的获取却是很不方便，只能通过 阻塞 或者 轮询 的方式得到任务的结果。</description>
+ Future 接口 Future 接口是对异步行为的抽象，用来表示异步计算的结果，接口比较简单，如下：
+public interface Future&amp;lt;V&amp;gt; { // 等待任务结束，获取结果  V get() throws InterruptedException, ExecutionException; // 获取结果，设置超时时间  V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException; // 取消任务的执行  boolean cancel(boolean mayInterruptIfRunning); // 正常完成前取消，返回 true  boolean isCancelled(); // 任务正常终止、异常或取消，返回true  boolean isDone(); } 继承关系  Future (java.util.concurrent)  RunnableFuture (java.util.concurrent) extends Runnable  FutureTask (java.util.concurrent)  ForkJoinTask (java.util.concurrent) CompletableFuture (java.</description>
     </item>
     
     <item>
@@ -141,6 +142,18 @@ zh java.util.concurrent.Future
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/locks/ReentrantLock/</guid>
       <description></description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/locks/StampedLock/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/locks/StampedLock/</guid>
+      <description>StampedLock https://www.jianshu.com/p/4657ba18a0a0
+https://www.liaoxuefeng.com/wiki/1252599548343744/1309138673991714
+https://segmentfault.com/a/1190000015808032?utm_source=tag-newest
+http://www.matools.com/file/manual/jdk_api_1.8_google/java/util/concurrent/locks/StampedLock.html</description>
     </item>
     
     <item>
