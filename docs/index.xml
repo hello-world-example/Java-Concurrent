@@ -15,7 +15,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/_sidebar/</guid>
-      <description> java.lang  Thread ThreadLocal  sun.misc  Unsafe  java.util.concurrent.locks  LockSupport AbstractQueuedSynchronizer ReentrantLock [8]StampedLock  java.util.concurrent  ExecutorService Future [7]ForkJoin [8]CompletableFuture CountDownLatch CyclicBarrier Phaser Semaphore  java.util.concurrent.atomic  AtomicLong [8]LongAdder   </description>
+      <description> java.lang  Thread ThreadLocal  sun.misc  Unsafe  java.util.concurrent.locks  LockSupport AbstractQueuedSynchronizer ReentrantLock [8]StampedLock  java.util.concurrent  ExecutorService Future ExecutorCompletionService [7]ForkJoin [8]CompletableFuture CountDownLatch CyclicBarrier Phaser Semaphore  java.util.concurrent.atomic  AtomicLong [8]LongAdder   </description>
     </item>
     
     <item>
@@ -63,8 +63,10 @@ final Thread thread = new Thread(() -&amp;gt; System.out.println(System.currentT
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/CompletableFuture/</guid>
-      <description> CompletableFuture https://www.jianshu.com/p/b3c4dd85901e
-Read More  强大的 CompletableFuture  </description>
+      <description>CompletableFuture Java8 带来了 CompletableFuture，一个 Future 的扩展类，极大丰富了 Future 的功能，帮助我们简化异步编程的复杂性，并且提供了函数式编程的能力。
+构造方式 API    常用方法 描述     supplyAsync(Supplier&amp;lt;U&amp;gt;) 有返回值的任务。
+多核下默认使用 ForkJoinPool线程池，也可以自行构造   runAsync(Runnable) 无返回值的任务。
+多核下默认使用 ForkJoinPool线程池，也可以自行构造       allOf(CompletableFuture&amp;lt;?&amp;gt;...) 所有 CompletableFuture 完成代表完成   anyOf(CompletableFuture&amp;lt;?&amp;gt;...) 任意一个 CompletableFuture 完成代表完成       completedFuture(U value) 直接获取 完成状态 的 CompletableFuture    任务关系 API 概述  thenAccept ： 任务执行完的 回调函数，参数是任务的执行结果  thenAcceptBoth： 两个任务同时执行完的 回调函数，thenAccept 是单个任务 acceptEither： 第一个 或 第二个 任务执行完的 回调函数  thenRun：任务执行完的 回调函数，接收 Runnable，无法获取返返回结果 thenApply： 对上一个任务的结果进行的中间计算，返回值传往下传递  applyToEither：第一个 或 第二个 任务执行完的 回调函数，返回值传往下传递  thenCompose： 与 thenApply 作用类似，不过返回值被 CompletableFuture 包装 thenCombine： 与 thenAcceptBoth 类似，不过有有返回值  thenAccept(Consumer) / thenRun(Runnable) final CompletableFuture&amp;lt;Integer&amp;gt; completableFuture = CompletableFuture.</description>
     </item>
     
     <item>
@@ -83,6 +85,17 @@ Read More  强大的 CompletableFuture  </description>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/CyclicBarrier/</guid>
       <description></description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/ExecutorCompletionService/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/ExecutorCompletionService/</guid>
+      <description>ExecutorCompletionService ExecutorCompletionService 是一个获取异步任务结果的工具类。
+封装了 Executor 和 BlockingQueue，把已经完成的任务放入队列，提供从队列中获取结果的方法 take / poll。
+源码摘录 public class ExecutorCompletionService&amp;lt;V&amp;gt; implements CompletionService&amp;lt;V&amp;gt; { private final Executor executor; private final BlockingQueue&amp;lt;Future&amp;lt;V&amp;gt;&amp;gt; completionQueue; private class QueueingFuture extends FutureTask&amp;lt;Void&amp;gt; { private final Future&amp;lt;V&amp;gt; task; QueueingFuture(RunnableFuture&amp;lt;V&amp;gt; task) { super(task, null); this.task = task; } // ❤ FutureTask 执行完成后，会回调 Done 方法  protected void done() { // 加入队列  completionQueue.add(task); } } public Future&amp;lt;V&amp;gt; take() throws InterruptedException { return completionQueue.take(); } public Future&amp;lt;V&amp;gt; poll() { return completionQueue.</description>
     </item>
     
     <item>

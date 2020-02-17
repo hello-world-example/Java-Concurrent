@@ -23,13 +23,13 @@ public class InvokeAllExecutorMain {
         final List<Future<String>> futures = threadPool.invokeAll(tasks);
         System.out.println("执行耗时 " + (System.currentTimeMillis() - start));
 
-    start = System.currentTimeMillis();
-    Map<String, String> result = new HashMap<>();
-    result.put("a", get(futures.get(0)));
-    result.put("b", get(futures.get(1)));
-    result.put("c", get(futures.get(2)));
-    System.out.println(result);
-    System.out.println("获取数据耗时 " + (System.currentTimeMillis() - start));
+        start = System.currentTimeMillis();
+        Map<String, String> result = new HashMap<>();
+        result.put("a", get(futures.get(0)));
+        result.put("b", get(futures.get(1)));
+        result.put("c", get(futures.get(2)));
+        System.out.println(result);
+        System.out.println("获取数据耗时 " + (System.currentTimeMillis() - start));
 
         threadPool.shutdown();
     }

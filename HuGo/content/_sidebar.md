@@ -15,8 +15,9 @@ headless: true
 - **java.util.concurrent**
   - [ExecutorService]({{< relref "/docs/java.util.concurrent/ExecutorService.md" >}})
   - [Future]({{< relref "/docs/java.util.concurrent/Future.md" >}})
+  - [ExecutorCompletionService]({{< relref "/docs/java.util.concurrent/ExecutorCompletionService.md" >}})
   - [<sup>[7]</sup>ForkJoin]({{< relref "/docs/java.util.concurrent/ForkJoin.md" >}})
-  - ~~<sup>[8]</sup>CompletableFuture~~
+  - [<sup>[8]</sup>CompletableFuture]({{< relref "/docs/java.util.concurrent/CompletableFuture.md" >}})
   - ~~CountDownLatch~~
   - ~~CyclicBarrier~~
   - ~~Phaser~~

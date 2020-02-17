@@ -74,8 +74,9 @@ https://github.com/alex-shpak/hugo-book
 <ul>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService</a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorCompletionService/">ExecutorCompletionService</a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoin/"><sup>[7]</sup>ForkJoin</a></li>
-<li><del><sup>[8]</sup>CompletableFuture</del></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CompletableFuture/"><sup>[8]</sup>CompletableFuture</a></li>
 <li><del>CountDownLatch</del></li>
 <li><del>CyclicBarrier</del></li>
 <li><del>Phaser</del></li>
@@ -123,12 +124,226 @@ https://github.com/alex-shpak/hugo-book
 
 <h1 id="completablefuture">CompletableFuture</h1>
 
-<p><a href="https://www.jianshu.com/p/b3c4dd85901e">https://www.jianshu.com/p/b3c4dd85901e</a></p>
+<p>Java8 带来了 <code>CompletableFuture</code>，一个 <code>Future</code> 的扩展类，极大丰富了 <code>Future</code> 的功能，帮助我们<strong>简化异步编程的复杂性</strong>，并且提供了函数式编程的能力。</p>
+
+<h2 id="构造方式-api">构造方式 API</h2>
+
+<table>
+<thead>
+<tr>
+<th>常用方法</th>
+<th>描述</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>supplyAsync(Supplier&lt;U&gt;)</code></td>
+<td>有返回值的任务。<br />多核下默认使用 <code>ForkJoinPool</code>线程池，也可以自行构造</td>
+</tr>
+
+<tr>
+<td><code>runAsync(Runnable)</code></td>
+<td>无返回值的任务。<br />多核下默认使用 <code>ForkJoinPool</code>线程池，也可以自行构造</td>
+</tr>
+
+<tr>
+<td></td>
+<td></td>
+</tr>
+
+<tr>
+<td><code>allOf(CompletableFuture&lt;?&gt;...)</code></td>
+<td>所有 <code>CompletableFuture</code> 完成代表完成</td>
+</tr>
+
+<tr>
+<td><code>anyOf(CompletableFuture&lt;?&gt;...)</code></td>
+<td>任意一个 <code>CompletableFuture</code> 完成代表完成</td>
+</tr>
+
+<tr>
+<td></td>
+<td></td>
+</tr>
+
+<tr>
+<td><code>completedFuture(U value)</code></td>
+<td>直接获取 <strong>完成状态</strong> 的 <code>CompletableFuture</code></td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="任务关系-api">任务关系 API</h2>
+
+<h3 id="概述">概述</h3>
+
+<ul>
+<li><code>thenAccept</code> ： 任务执行完的 <strong>回调函数</strong>，参数是任务的执行结果
+
+<ul>
+<li><code>thenAcceptBoth</code>： 两个任务同时执行完的 <strong>回调函数</strong>，<code>thenAccept</code> 是单个任务</li>
+<li><code>acceptEither</code>： 第一个 或 第二个 任务执行完的 <strong>回调函数</strong></li>
+</ul></li>
+<li><code>thenRun</code>：任务执行完的 <strong>回调函数</strong>，接收 <code>Runnable</code>，无法获取返返回结果</li>
+<li><code>thenApply</code>： 对上一个任务的结果进行的<strong>中间计算</strong>，返回值传往下传递
+
+<ul>
+<li><code>applyToEither</code>：第一个 或 第二个 任务执行完的 <strong>回调函数</strong>，返回值传往下传递</li>
+</ul></li>
+<li><code>thenCompose</code>： 与 <code>thenApply</code> 作用类似，不过返回值被 <code>CompletableFuture</code> 包装</li>
+<li><code>thenCombine</code>： 与 <code>thenAcceptBoth</code> 类似，不过有有返回值</li>
+</ul>
+
+<h3 id="thenaccept-consumer-thenrun-runnable">thenAccept(Consumer) / thenRun(Runnable)</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">CompletableFuture</span><span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">completableFuture</span> <span style="color:#f92672">=</span> CompletableFuture.<span style="color:#a6e22e">supplyAsync</span>(() <span style="color:#f92672">-&gt;</span> {
+  ThreadUtil.<span style="color:#a6e22e">sleep</span>(1, TimeUnit.<span style="color:#a6e22e">SECONDS</span>);
+  <span style="color:#66d9ef">return</span> 1;
+});
+
+<span style="color:#75715e">// ❤ CompletableFuture&lt;Void&gt;
+</span><span style="color:#75715e"></span>CompletableFuture<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">future</span> <span style="color:#f92672">=</span> completableFuture.<span style="color:#a6e22e">thenRun</span>(() <span style="color:#f92672">-&gt;</span> System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;asd&#34;</span>));
+future <span style="color:#f92672">=</span> completableFuture.<span style="color:#a6e22e">thenAccept</span>((data) <span style="color:#f92672">-&gt;</span> System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(data));
+
+completableFuture.<span style="color:#a6e22e">get</span>(); <span style="color:#f92672">//</span> 等待任务执行结束</code></pre></div>
+<h3 id="thenacceptboth-completionstage-biconsumer-accepteither-completionstage-consumer">thenAcceptBoth(CompletionStage, BiConsumer) / acceptEither(CompletionStage, Consumer)</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">CompletableFuture</span><span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">taskFuture1</span> <span style="color:#f92672">=</span> CompletableFuture.<span style="color:#a6e22e">supplyAsync</span>(() <span style="color:#f92672">-&gt;</span> {
+  ThreadUtil.<span style="color:#a6e22e">sleep</span>(1, TimeUnit.<span style="color:#a6e22e">SECONDS</span>);  
+  <span style="color:#66d9ef">return</span> 1;
+});
+
+<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">CompletableFuture</span><span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">taskFuture2</span> <span style="color:#f92672">=</span> CompletableFuture.<span style="color:#a6e22e">supplyAsync</span>(() <span style="color:#f92672">-&gt;</span> {
+  ThreadUtil.<span style="color:#a6e22e">sleep</span>(2, TimeUnit.<span style="color:#a6e22e">SECONDS</span>);
+  <span style="color:#66d9ef">return</span> 2;
+});
+
+<span style="color:#75715e">// 两个都完成时的回调
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">CompletableFuture</span><span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">acceptBothFuture</span> <span style="color:#f92672">=</span> taskFuture1.<span style="color:#a6e22e">thenAcceptBoth</span>(taskFuture2, (t1, t2) <span style="color:#f92672">-&gt;</span> {
+  System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;t1 + t2 = &#34;</span> <span style="color:#f92672">+</span> (t1 <span style="color:#f92672">+</span> t2));
+});
+
+<span style="color:#66d9ef">long</span> <span style="color:#a6e22e">start</span> <span style="color:#f92672">=</span> System.<span style="color:#a6e22e">currentTimeMillis</span>();
+acceptBothFuture.<span style="color:#a6e22e">get</span>();
+System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;耗时: &#34;</span> <span style="color:#f92672">+</span> (System.<span style="color:#a6e22e">currentTimeMillis</span>() <span style="color:#f92672">-</span> start));
+
+<span style="color:#75715e">// ----
+</span><span style="color:#75715e">// 其中一个完成即回调
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">CompletableFuture</span><span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">resultFuture</span> <span style="color:#f92672">=</span> taskFuture1.<span style="color:#a6e22e">acceptEither</span>(taskFuture2, (someone) <span style="color:#f92672">-&gt;</span> {
+  System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;t1 or t2 -&gt; &#34;</span> <span style="color:#f92672">+</span> someone);
+});
+
+start <span style="color:#f92672">=</span> System.<span style="color:#a6e22e">currentTimeMillis</span>();
+resultFuture.<span style="color:#a6e22e">get</span>();
+<span style="color:#75715e">// 因为两个 Future 都已经是完成状态，无需计算，直接获取结果，没有耗时
+</span><span style="color:#75715e"></span>System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;耗时: &#34;</span> <span style="color:#f92672">+</span> (System.<span style="color:#a6e22e">currentTimeMillis</span>() <span style="color:#f92672">-</span> start));</code></pre></div>
+<blockquote>
+<p>t1 + t2 = 3<br />
+耗时: 2002</p>
+
+<p>t1 or t2 -&gt; 1<br />
+耗时: 0</p>
+</blockquote>
+
+<h3 id="thenapply-function">thenApply(Function)</h3>
+
+<p>承上启下的任务</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">CompletableFuture</span><span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">taskFuture1</span> <span style="color:#f92672">=</span> CompletableFuture.<span style="color:#a6e22e">supplyAsync</span>(() <span style="color:#f92672">-&gt;</span> {
+    ThreadUtil.<span style="color:#a6e22e">sleep</span>(1, TimeUnit.<span style="color:#a6e22e">SECONDS</span>);
+    <span style="color:#66d9ef">return</span> 1;
+});
+
+<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">CompletableFuture</span><span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">future</span> <span style="color:#f92672">=</span> taskFuture1
+        .<span style="color:#a6e22e">thenApply</span>((d) <span style="color:#f92672">-&gt;</span> d <span style="color:#f92672">+</span> d)
+        .<span style="color:#a6e22e">thenAccept</span>(System.<span style="color:#a6e22e">out</span><span style="color:#f92672">::</span>println);
+
+future.<span style="color:#a6e22e">get</span>();</code></pre></div>
+<h2 id="健壮性-api">健壮性 API</h2>
+
+<h3 id="getnow">getNow</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">CompletableFuture</span><span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">future</span> <span style="color:#f92672">=</span> CompletableFuture.<span style="color:#a6e22e">supplyAsync</span>(() <span style="color:#f92672">-&gt;</span> {
+    ThreadUtil.<span style="color:#a6e22e">sleep</span>(1, TimeUnit.<span style="color:#a6e22e">SECONDS</span>);
+    <span style="color:#66d9ef">return</span> 1;
+});
+
+<span style="color:#75715e">// 如果任务已经结束，返回任务结果，如果没有完成，返回默认值，这里输出2
+</span><span style="color:#75715e"></span>System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(future.<span style="color:#a6e22e">getNow</span>(2));
+<span style="color:#75715e">// 阻塞等待任务执行完，这里输出 1
+</span><span style="color:#75715e"></span>System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(future.<span style="color:#a6e22e">get</span>());</code></pre></div>
+<h3 id="complete">complete</h3>
+
+<ul>
+<li>如果任务还<strong>未完成</strong>，强制设置任务完成，并设置任务结果，返回 true</li>
+
+<li><p>如果任务<strong>已经完成</strong>，该操作没有效果，返回 false</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">CompletableFuture</span><span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">future</span> <span style="color:#f92672">=</span> CompletableFuture.<span style="color:#a6e22e">supplyAsync</span>(() <span style="color:#f92672">-&gt;</span> {
+ThreadUtil.<span style="color:#a6e22e">sleep</span>(1, TimeUnit.<span style="color:#a6e22e">SECONDS</span>);
+<span style="color:#66d9ef">return</span> 1;
+});
+<span style="color:#75715e">// 这里任务还未执行完，强制设置任务完成，结果为 2，
+</span><span style="color:#75715e"></span>System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(future.<span style="color:#a6e22e">complete</span>(2));
+<span style="color:#75715e">// 非阻塞，立即输出2
+</span><span style="color:#75715e"></span>System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(future.<span style="color:#a6e22e">get</span>());</code></pre></div></li>
+</ul>
+
+<h3 id="completeexceptionally">completeExceptionally</h3>
+
+<p>与 <code>complete</code> 功能类似，一个设置值，一个设置异常</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">CompletableFuture</span><span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">future</span> <span style="color:#f92672">=</span> CompletableFuture.<span style="color:#a6e22e">supplyAsync</span>(() <span style="color:#f92672">-&gt;</span> {
+  ThreadUtil.<span style="color:#a6e22e">sleep</span>(1, TimeUnit.<span style="color:#a6e22e">SECONDS</span>);
+  <span style="color:#66d9ef">return</span> 1;
+});
+
+<span style="color:#75715e">// 这里任务还未执行完，强制设置任务完成，使调用 get 的时候抛异常
+</span><span style="color:#75715e"></span>System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(future.<span style="color:#a6e22e">completeExceptionally</span>(<span style="color:#66d9ef">new</span> Exception(<span style="color:#e6db74">&#34;强制异常&#34;</span>)));
+<span style="color:#75715e">// 这里抛出异常
+</span><span style="color:#75715e"></span>System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(future.<span style="color:#a6e22e">get</span>());</code></pre></div>
+<h3 id="obtrudevalue-obtrudeexception">obtrudeValue / obtrudeException</h3>
+
+<ul>
+<li><code>complete</code> / <code>completeExceptionally</code>，在任务已经完成的时候设置无效</li>
+<li>这个两个对应方法，无论任务是否完成都有效</li>
+</ul>
+
+<h3 id="exceptionally">exceptionally</h3>
+
+<p>指定出现异常时的默认值</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">CompletableFuture</span><span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">future</span> <span style="color:#f92672">=</span> CompletableFuture.<span style="color:#a6e22e">supplyAsync</span>(() <span style="color:#f92672">-&gt;</span> {
+  ThreadUtil.<span style="color:#a6e22e">sleep</span>(1, TimeUnit.<span style="color:#a6e22e">SECONDS</span>);
+  <span style="color:#66d9ef">return</span> 1 <span style="color:#f92672">/</span> 0; <span style="color:#75715e">// exception
+</span><span style="color:#75715e"></span>});
+
+<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">CompletableFuture</span><span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">future2</span> <span style="color:#f92672">=</span> CompletableFuture.<span style="color:#a6e22e">supplyAsync</span>(() <span style="color:#f92672">-&gt;</span> {
+  ThreadUtil.<span style="color:#a6e22e">sleep</span>(2, TimeUnit.<span style="color:#a6e22e">SECONDS</span>);
+  <span style="color:#66d9ef">return</span> 2;
+});
+
+<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">CompletableFuture</span><span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">result</span> <span style="color:#f92672">=</span> future
+  <span style="color:#75715e">// exception 默认 0
+</span><span style="color:#75715e"></span>  .<span style="color:#a6e22e">exceptionally</span>(ex <span style="color:#f92672">-&gt;</span> {
+    ex.<span style="color:#a6e22e">printStackTrace</span>();
+    <span style="color:#66d9ef">return</span> 0;
+  })
+  .<span style="color:#a6e22e">thenAcceptBoth</span>(future2, (t1, t2) <span style="color:#f92672">-&gt;</span> {
+    <span style="color:#75715e">// 结果是 0 + 2 = 2
+</span><span style="color:#75715e"></span>    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(t1 <span style="color:#f92672">+</span> t2);
+  });
+
+result.<span style="color:#a6e22e">join</span>();</code></pre></div>
+<h3 id="handle-bifunction-t-throwable-u">handle(BiFunction<T, Throwable, U>)</h3>
+
+<p>类似于 <code>thenApply</code> 和 <code>exceptionally</code> 的结合，不管上个任务是 <strong>正常</strong> 或 <strong>异常</strong>，都会执行该方法</p>
+
+<h3 id="whencomplete-biconsumer-t-throwable">whenComplete(BiConsumer<T, Throwable>)</h3>
+
+<p>类似于 <code>thenAccept</code> 和 <code>exceptionally</code> 的结合，不管任务是 <strong>正常</strong> 或 <strong>异常</strong>，都会执行该方法</p>
 
 <h2 id="read-more">Read More</h2>
 
 <ul>
-<li><a href="https://www.cnblogs.com/pjjlt/p/11210120.html">强大的 CompletableFuture</a></li>
+<li><a href="http://www.matools.com/file/manual/jdk_api_1.8_google/java/util/concurrent/CompletableFuture.html"><code>java.util.concurrent.CompletableFuture&lt;T&gt;</code></a></li>
+<li>IBM Developer <a href="https://www.ibm.com/developerworks/cn/java/j-cf-of-jdk8/index.html">通过实例理解 JDK8 的 CompletableFuture</a></li>
+<li><a href="https://www.jianshu.com/p/558b090ae4bb">CompletableFuture API 详解</a></li>
+<li><a href="https://www.cnblogs.com/aniao/p/aniao_cf.html">JUC源码解析 - CompletableFuture</a></li>
 </ul>
 </article>
 
@@ -163,6 +378,24 @@ https://github.com/alex-shpak/hugo-book
 <ul>
 <li><a href="#completablefuture">CompletableFuture</a>
 <ul>
+<li><a href="#构造方式-api">构造方式 API</a></li>
+<li><a href="#任务关系-api">任务关系 API</a>
+<ul>
+<li><a href="#概述">概述</a></li>
+<li><a href="#thenaccept-consumer-thenrun-runnable">thenAccept(Consumer) / thenRun(Runnable)</a></li>
+<li><a href="#thenacceptboth-completionstage-biconsumer-accepteither-completionstage-consumer">thenAcceptBoth(CompletionStage, BiConsumer) / acceptEither(CompletionStage, Consumer)</a></li>
+<li><a href="#thenapply-function">thenApply(Function)</a></li>
+</ul></li>
+<li><a href="#健壮性-api">健壮性 API</a>
+<ul>
+<li><a href="#getnow">getNow</a></li>
+<li><a href="#complete">complete</a></li>
+<li><a href="#completeexceptionally">completeExceptionally</a></li>
+<li><a href="#obtrudevalue-obtrudeexception">obtrudeValue / obtrudeException</a></li>
+<li><a href="#exceptionally">exceptionally</a></li>
+<li><a href="#handle-bifunction-t-throwable-u">handle(BiFunction<T, Throwable, U>)</a></li>
+<li><a href="#whencomplete-biconsumer-t-throwable">whenComplete(BiConsumer<T, Throwable>)</a></li>
+</ul></li>
 <li><a href="#read-more">Read More</a></li>
 </ul></li>
 </ul>

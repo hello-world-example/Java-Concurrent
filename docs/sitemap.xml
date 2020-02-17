@@ -43,6 +43,11 @@
   </url>
   
   <url>
+    <loc>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/ExecutorCompletionService/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/ExecutorService/</loc>
     <priority>0</priority>
   </url>

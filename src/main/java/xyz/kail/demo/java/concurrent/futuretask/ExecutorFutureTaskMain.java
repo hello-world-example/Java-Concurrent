@@ -1,4 +1,4 @@
-package xyz.kail.demo.java.concurrent.future.futuretask;
+package xyz.kail.demo.java.concurrent.futuretask;
 
 import java.util.List;
 import java.util.concurrent.*;

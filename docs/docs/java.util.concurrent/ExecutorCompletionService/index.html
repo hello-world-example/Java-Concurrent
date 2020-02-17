@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Executor Completion Service | Java-Concurrent</title>
+
+
+<link rel="stylesheet" href="/Java-Concurrent/book.min.79de1f7861b0c98f453c0a93bebf3608a280809e417787746c373699639900d7.css">
+
+
+
+
+<link rel="icon" href="/Java-Concurrent/favicon.png" type="image/x-icon">
+
+
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body>
+  <input type="checkbox" style="display: none" id="menu-control" />
+  <main class="flex container">
+
+    <aside class="book-menu fixed">
+      <nav>
+<h2 class="book-brand">
+  <a href="https://hello-world-example.github.io/Java-Concurrent/">Java-Concurrent</a>
+</h2>
+
+
+
+
+
+
+    
+  
+  
+  
+
+  <style>
+  nav ul a[href$="\2fJava-Concurrent\2f docs\2fjava.util.concurrent\2f ExecutorCompletionService\2f "] {
+      color: #004ed0;
+  }
+  </style>
+
+<ul>
+<li><strong>java.lang</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.lang/Thread/">Thread</a></li>
+<li><a href="/Java-Concurrent/docs/java.lang/ThreadLocal/">ThreadLocal</a></li>
+</ul></li>
+<li><strong>sun.misc</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/sun.misc/Unsafe/">Unsafe</a></li>
+</ul></li>
+<li><strong>java.util.concurrent.locks</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/">LockSupport</a></li>
+<li><del>AbstractQueuedSynchronizer</del></li>
+<li><del>ReentrantLock</del></li>
+<li><del><sup>[8]</sup>StampedLock</del></li>
+</ul></li>
+<li><strong>java.util.concurrent</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorCompletionService/">ExecutorCompletionService</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoin/"><sup>[7]</sup>ForkJoin</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CompletableFuture/"><sup>[8]</sup>CompletableFuture</a></li>
+<li><del>CountDownLatch</del></li>
+<li><del>CyclicBarrier</del></li>
+<li><del>Phaser</del></li>
+<li><del>Semaphore</del></li>
+</ul></li>
+<li><strong>java.util.concurrent.atomic</strong>
+
+<ul>
+<li><del>AtomicLong</del></li>
+<li><del><sup>[8]</sup>LongAdder</del></li>
+</ul></li>
+</ul>
+
+
+
+
+
+
+
+</nav>
+
+
+<script>
+(function() {
+  var menu = document.querySelector("aside.book-menu nav");
+  addEventListener("beforeunload", function(event) {
+    localStorage.setItem("menu.scrollTop", menu.scrollTop);
+  });
+  menu.scrollTop = localStorage.getItem("menu.scrollTop");
+})();
+</script>
+
+    </aside>
+
+    <div class="book-page">
+      <header class="flex align-center justify-between book-header">
+  <label for="menu-control">
+    <img src="/Java-Concurrent/svg/menu.svg" alt="Menu" />
+  </label>
+  <strong>Executor Completion Service</strong>
+</header>
+
+      
+<article class="markdown">
+
+<h1 id="executorcompletionservice">ExecutorCompletionService</h1>
+
+<p><code>ExecutorCompletionService</code> 是一个<strong>获取异步任务结果的工具类</strong>。</p>
+
+<p>封装了 <code>Executor</code> 和 <code>BlockingQueue</code>，把已经完成的任务放入队列，提供从队列中获取结果的方法 <code>take</code> / <code>poll</code>。</p>
+
+<h2 id="源码摘录">源码摘录</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">class</span> ExecutorCompletionService<span style="color:#f92672">&lt;</span>V<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">implements</span> CompletionService<span style="color:#f92672">&lt;</span>V<span style="color:#f92672">&gt;</span> {
+
+  <span style="color:#66d9ef">private</span> <span style="color:#a6e22e">final</span> Executor <span style="color:#a6e22e">executor</span>;
+  <span style="color:#66d9ef">private</span> <span style="color:#a6e22e">final</span> BlockingQueue<span style="color:#f92672">&lt;</span>Future<span style="color:#f92672">&lt;</span>V<span style="color:#f92672">&gt;&gt;</span> <span style="color:#a6e22e">completionQueue</span>;
+  
+  <span style="color:#66d9ef">private</span> <span style="color:#a6e22e">class</span> QueueingFuture <span style="color:#a6e22e">extends</span> FutureTask<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;</span> {
+    <span style="color:#66d9ef">private</span> <span style="color:#a6e22e">final</span> Future<span style="color:#f92672">&lt;</span>V<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">task</span>;
+    QueueingFuture(RunnableFuture<span style="color:#f92672">&lt;</span>V<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">task</span>) {
+      <span style="color:#66d9ef">super</span>(task, <span style="color:#66d9ef">null</span>);
+      <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">task</span> <span style="color:#f92672">=</span> task;
+    }
+    <span style="color:#75715e">// ❤ FutureTask 执行完成后，会回调 Done 方法
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">protected</span> <span style="color:#a6e22e">void</span> done() { 
+      <span style="color:#75715e">// 加入队列
+</span><span style="color:#75715e"></span>      completionQueue.<span style="color:#a6e22e">add</span>(task); 
+    }
+  }
+  
+  <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">Future</span><span style="color:#f92672">&lt;</span>V<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">take</span>() <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span> {
+    <span style="color:#66d9ef">return</span> completionQueue.<span style="color:#a6e22e">take</span>();
+  }
+
+  <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">Future</span><span style="color:#f92672">&lt;</span>V<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">poll</span>() {
+    <span style="color:#66d9ef">return</span> completionQueue.<span style="color:#a6e22e">poll</span>();
+  }
+}</code></pre></div>
+<h2 id="使用示例">使用示例</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">ExecutorService <span style="color:#a6e22e">threadPool</span> <span style="color:#f92672">=</span> Executors.<span style="color:#a6e22e">newCachedThreadPool</span>();
+<span style="color:#75715e">// 包装 threadPool
+</span><span style="color:#75715e"></span>CompletionService<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">completionService</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ExecutorCompletionService<span style="color:#f92672">&lt;&gt;</span>(threadPool);
+
+<span style="color:#75715e">// 提交三个任务
+</span><span style="color:#75715e"></span>completionService.<span style="color:#a6e22e">submit</span>(() <span style="color:#f92672">-&gt;</span> ThreadUtil.<span style="color:#a6e22e">sleep</span>(1, TimeUnit.<span style="color:#a6e22e">SECONDS</span>), 1L);
+completionService.<span style="color:#a6e22e">submit</span>(() <span style="color:#f92672">-&gt;</span> ThreadUtil.<span style="color:#a6e22e">sleep</span>(2, TimeUnit.<span style="color:#a6e22e">SECONDS</span>), 2L);
+completionService.<span style="color:#a6e22e">submit</span>(() <span style="color:#f92672">-&gt;</span> ThreadUtil.<span style="color:#a6e22e">sleep</span>(3, TimeUnit.<span style="color:#a6e22e">SECONDS</span>), 3L);
+
+<span style="color:#66d9ef">for</span> (; ; ) {
+  <span style="color:#75715e">// 哪个先执行完，就先获取哪个任务的结果
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 如果没有执行完的任务，这里会 阻塞
+</span><span style="color:#75715e"></span>  System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(completionService.<span style="color:#a6e22e">take</span>().<span style="color:#a6e22e">get</span>());
+}</code></pre></div>
+<h2 id="read-more">Read More</h2>
+
+<blockquote>
+<p><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/ExecutorCompletionService.html"><code>java.util.concurrent.ExecutorCompletionService&lt;V&gt;</code></a></p>
+</blockquote>
+</article>
+
+      
+<div class="book-footer justify-end">
+  
+  
+  <div>
+    <a href="https://github.com/hello-world-example/Java-Concurrent/edit/master/HuGo/content/docs/java.util.concurrent/ExecutorCompletionService.md" target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/edit.svg" alt="Edit" /> Edit this page
+    </a>
+  </div>
+  
+</div>
+
+
+      
+    </div>
+
+    
+  
+
+  <aside class="book-toc level-3 fixed">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#executorcompletionservice">ExecutorCompletionService</a>
+<ul>
+<li><a href="#源码摘录">源码摘录</a></li>
+<li><a href="#使用示例">使用示例</a></li>
+<li><a href="#read-more">Read More</a></li>
+</ul></li>
+</ul>
+</nav>
+  </aside>
+
+
+
+  </main>
+  
+  
+  
+</body>
+
+</html>
