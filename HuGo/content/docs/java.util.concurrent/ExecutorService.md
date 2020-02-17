@@ -177,7 +177,7 @@ new ScheduledThreadPoolExecutor(1)
 
 ### [1.8]newWorkStealingPool(parallelism)
 
-> @see [1.7] [ForkJoinPool]({{< relref "/docs/java.util.concurrent/ForkJoinPool.md" >}}) Page
+> @see [1.7] [ForkJoinPool]({{< relref "/docs/java.util.concurrent/ForkJoin.md" >}}) Page
 
 创建 parallelism 个线程 的线程池，来维持相应的并行级别，它会通过**工作窃取**的方式，使得多核的 CPU 不会闲置，总会有活着的线程让 CPU 去运行。**所谓工作窃取，指的是闲置的线程去处理本不属于它的任务**。每个处理器核，都有一个队列存储着需要完成的任务。对于多核的机器来说，当一个核对应的任务处理完毕后，就可以去帮助其他的核处理任务。
 

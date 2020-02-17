@@ -11,16 +11,16 @@ headless: true
   - [LockSupport]({{< relref "/docs/java.util.concurrent/locks/LockSupport.md" >}})
   - ~~AbstractQueuedSynchronizer~~
   - ~~ReentrantLock~~
-  - ~~StampedLock~~
+  - ~~<sup>[8]</sup>StampedLock~~
 - **java.util.concurrent**
   - [ExecutorService]({{< relref "/docs/java.util.concurrent/ExecutorService.md" >}})
   - [Future]({{< relref "/docs/java.util.concurrent/Future.md" >}})
-  - ~~CompletableFuture~~
-  - ~~[ForkJoinPool]({{< relref "/docs/java.util.concurrent/ForkJoinPool.md" >}})~~
+  - [<sup>[7]</sup>ForkJoin]({{< relref "/docs/java.util.concurrent/ForkJoin.md" >}})
+  - ~~<sup>[8]</sup>CompletableFuture~~
   - ~~CountDownLatch~~
   - ~~CyclicBarrier~~
   - ~~Phaser~~
   - ~~Semaphore~~
 - **java.util.concurrent.atomic**
   - ~~AtomicLong~~
-  - ~~LongAdder~~
+  - ~~<sup>[8]</sup>LongAdder~~

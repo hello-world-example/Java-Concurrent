@@ -1,26 +1,25 @@
-package xyz.kail.demo.java.concurrent.future;
+package xyz.kail.demo.java.concurrent.future.futuretask;
 
-import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 
-public class ExecutorFutureTaskMain {
+public class ThreadFutureTaskMain {
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
 
         FutureTask<String> futureTask = new FutureTask<>(() -> {
             Thread.sleep(3000);
             return "ok";
         });
 
-        // 提交任务
-        threadExecutor.execute(futureTask);
+        // 开启线程执行
+        new Thread(futureTask).start();
 
         System.out.println("waiting." + System.currentTimeMillis());
         final String result = futureTask.get(); // 等待执行结果
         System.out.println(result + "......" + System.currentTimeMillis());
-
-        threadExecutor.shutdown();
 
     }
 

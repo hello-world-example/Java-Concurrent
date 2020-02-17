@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fork Join | Java-Concurrent</title>
+
+
+<link rel="stylesheet" href="/Java-Concurrent/book.min.79de1f7861b0c98f453c0a93bebf3608a280809e417787746c373699639900d7.css">
+
+
+
+
+<link rel="icon" href="/Java-Concurrent/favicon.png" type="image/x-icon">
+
+
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body>
+  <input type="checkbox" style="display: none" id="menu-control" />
+  <main class="flex container">
+
+    <aside class="book-menu fixed">
+      <nav>
+<h2 class="book-brand">
+  <a href="https://hello-world-example.github.io/Java-Concurrent/">Java-Concurrent</a>
+</h2>
+
+
+
+
+
+
+    
+  
+  
+  
+
+  <style>
+  nav ul a[href$="\2fJava-Concurrent\2f docs\2fjava.util.concurrent\2f ForkJoin\2f "] {
+      color: #004ed0;
+  }
+  </style>
+
+<ul>
+<li><strong>java.lang</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.lang/Thread/">Thread</a></li>
+<li><a href="/Java-Concurrent/docs/java.lang/ThreadLocal/">ThreadLocal</a></li>
+</ul></li>
+<li><strong>sun.misc</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/sun.misc/Unsafe/">Unsafe</a></li>
+</ul></li>
+<li><strong>java.util.concurrent.locks</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/">LockSupport</a></li>
+<li><del>AbstractQueuedSynchronizer</del></li>
+<li><del>ReentrantLock</del></li>
+<li><del><sup>[8]</sup>StampedLock</del></li>
+</ul></li>
+<li><strong>java.util.concurrent</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoin/"><sup>[7]</sup>ForkJoin</a></li>
+<li><del><sup>[8]</sup>CompletableFuture</del></li>
+<li><del>CountDownLatch</del></li>
+<li><del>CyclicBarrier</del></li>
+<li><del>Phaser</del></li>
+<li><del>Semaphore</del></li>
+</ul></li>
+<li><strong>java.util.concurrent.atomic</strong>
+
+<ul>
+<li><del>AtomicLong</del></li>
+<li><del><sup>[8]</sup>LongAdder</del></li>
+</ul></li>
+</ul>
+
+
+
+
+
+
+
+</nav>
+
+
+<script>
+(function() {
+  var menu = document.querySelector("aside.book-menu nav");
+  addEventListener("beforeunload", function(event) {
+    localStorage.setItem("menu.scrollTop", menu.scrollTop);
+  });
+  menu.scrollTop = localStorage.getItem("menu.scrollTop");
+})();
+</script>
+
+    </aside>
+
+    <div class="book-page">
+      <header class="flex align-center justify-between book-header">
+  <label for="menu-control">
+    <img src="/Java-Concurrent/svg/menu.svg" alt="Menu" />
+  </label>
+  <strong>Fork Join</strong>
+</header>
+
+      
+<article class="markdown">
+
+<h1 id="forkjoin">ForkJoin</h1>
+
+<p>ForkJoin 是一个 <strong>基于分而治之算法</strong>， 把大任务分割成若干个小任务，最终汇总每个小任务结果后，得到大任务结果的<strong>框架</strong>。框架基于以下两种操作：</p>
+
+<ul>
+<li><strong><code>fork</code> 操作</strong>：把任务分成更小的任务，使用这个框架执行它们</li>
+<li><strong><code>join</code> 操作</strong>：等待创建的任务的计算结束</li>
+</ul>
+
+<p><img src="https://static001.infoq.cn/resource/image/2b/09/2be16e00a8ee6f6c7b738817f003e609.png" alt="https://www.infoq.cn/article/fork-join-introduction" /></p>
+
+<h2 id="与-executor-的区别">与 Executor 的区别</h2>
+
+<ul>
+<li>Executor 是所有工作线程公用一个任务队列，<strong>所有的线程消费一个任务队列里面的任务</strong></li>
+<li>ForkJoin 是 每个线程都有一个任务对象，<strong>每个线程消费各自任务队列的任务</strong></li>
+</ul>
+
+<hr />
+
+<ul>
+<li>这样的话， ForkJoin 可能会导致一个问题，<strong>假如有些任务队列早早被消费完了，则该队列对应的线程就闲置了</strong></li>
+<li><code>Executor</code> 则不会出现该问题，因为只有一个队列，当线程执行完一个任务后，重新从队列中获取任务，直到所有的任务执行换才会闲置</li>
+</ul>
+
+<hr />
+
+<ul>
+<li>ForkJoin 为了解决任务队列消费速度不一致导致的闲置问题，当一个任务队列执行完之后，就去其他线程的队列里<strong>窃取</strong>一个任务来执行，还给这个行为起了一个高大上的名字：<strong>工作窃取（work-stealing）算法</strong>。JDK 1.8 可以简单的通过 <code>ExecutorService executor = Executors.newWorkStealingPool(4)</code> 获取改类型的  <code>Executor</code></li>
+<li>解决了线程闲置问题， <code>Executor</code> 和 <code>ForkJoin</code> 的线程都可达到满负荷运行了，这时候的区别在于<strong>两者对数据的竞争状态不一样</strong>
+
+<ul>
+<li><code>Executor</code> 始终都是所有的线程竞争一个队列的数据</li>
+<li><code>ForkJoin</code> 只有在 “窃取” 其他线程任务队里的最后一条数据的时候才产生竞争</li>
+</ul></li>
+</ul>
+
+<h2 id="核心类">核心类</h2>
+
+<ul>
+<li><code>ForkJoinPool</code>：它实现 ExecutorService 接口 和 work-stealing 算法，管理工作线程和提供关于任务的状态和执行的信息</li>
+<li><code>ForkJoinTask</code>： 它是是在 ForkJoinPool 中执行的任务的基类，提供在任务中执行 <code>fork()</code> 和 <code>join()</code> 操作的机制。通常， 为了实现你的 Fork/Join 任务，需要实现 <code>ForkJoinTask</code> 的子类
+
+<ul>
+<li><code>RecursiveAction</code> 处理<strong>没有返回值</strong>的任务</li>
+<li><code>RecursiveTask</code> 处理<strong>有返回值</strong>的任务</li>
+</ul></li>
+</ul>
+
+<h2 id="编程流程">编程流程</h2>
+
+<p>一个使用 ForkJoin 框架累加的示例</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">class</span> ForkJoinMain {
+
+  <span style="color:#a6e22e">@AllArgsConstructor</span>
+  <span style="color:#66d9ef">static</span> <span style="color:#a6e22e">class</span> Task <span style="color:#a6e22e">extends</span> RecursiveTask<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> {
+    <span style="color:#66d9ef">static</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">TASK_SIZE</span> <span style="color:#f92672">=</span> 2;
+
+    List<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">data</span>; 
+    <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">start</span>; 
+    <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">end</span>;
+
+    <span style="color:#75715e">/*
+</span><span style="color:#75715e">     * 需要自己实现拆分和计算逻辑
+</span><span style="color:#75715e">     */</span>
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">protected</span> <span style="color:#a6e22e">Integer</span> compute() {
+      <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">int</span> taskSize <span style="color:#f92672">=</span> end <span style="color:#f92672">-</span> start;
+      <span style="color:#75715e">/*
+</span><span style="color:#75715e">       * 2. 当任务已经拆分到了指定的阀值，直接结算结果
+</span><span style="color:#75715e">       */</span>
+      <span style="color:#66d9ef">if</span> (taskSize <span style="color:#f92672">&lt;=</span> TASK_SIZE) {
+        <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">sum</span> <span style="color:#f92672">=</span> 0;
+        <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">=</span> start; i <span style="color:#f92672">&lt;</span> end; i<span style="color:#f92672">++</span>) {
+          sum <span style="color:#f92672">+=</span> data.<span style="color:#a6e22e">get</span>(i);
+        }
+        <span style="color:#75715e">// 小批任务的计算结果
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> sum;
+      }
+
+      <span style="color:#75715e">/*
+</span><span style="color:#75715e">       * 1. 没有拆分到了指定的阀值，❤❤❤ 拆分任务 ❤❤❤
+</span><span style="color:#75715e">       */</span>
+      <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">int</span> middle <span style="color:#f92672">=</span> (end <span style="color:#f92672">+</span> start) <span style="color:#f92672">/</span> 2;
+      Task <span style="color:#a6e22e">task1</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Task(data, start, middle);
+      Task <span style="color:#a6e22e">task2</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Task(data, middle, end);
+
+      <span style="color:#75715e">// task1.fork(); 
+</span><span style="color:#75715e"></span>      <span style="color:#75715e">// task2.fork();
+</span><span style="color:#75715e"></span>      invokeAll(task1, task2);
+
+      <span style="color:#75715e">/*
+</span><span style="color:#75715e">       * 3. ❤❤ 汇总❤❤ 每个小任务的结果
+</span><span style="color:#75715e">       */</span>
+      <span style="color:#66d9ef">return</span> task1.<span style="color:#a6e22e">join</span>() <span style="color:#f92672">+</span> task2.<span style="color:#a6e22e">join</span>();
+    }
+  }
+
+  <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span>(String[] <span style="color:#a6e22e">args</span>) <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span>, ExecutionException {
+    <span style="color:#75715e">// 数据
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">List</span><span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">data</span> <span style="color:#f92672">=</span> Arrays.<span style="color:#a6e22e">asList</span>(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    <span style="color:#75715e">// 任务
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Task</span> task <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Task(data, 0, data.<span style="color:#a6e22e">size</span>());
+
+    <span style="color:#75715e">// 提交任务 方式1
+</span><span style="color:#75715e"></span>    Integer <span style="color:#a6e22e">result</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ForkJoinPool(4).<span style="color:#a6e22e">invoke</span>(task);
+    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(result);
+
+    <span style="color:#75715e">// 提交任务 方式2
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Future</span><span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">future</span> <span style="color:#f92672">=</span> ForkJoinPool.<span style="color:#a6e22e">commonPool</span>().<span style="color:#a6e22e">submit</span>(task);
+    System.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">println</span>(future.<span style="color:#a6e22e">get</span>()); <span style="color:#75715e">// 获取返回结果
+</span><span style="color:#75715e"></span>  }
+}</code></pre></div>
+<p>从以上示例可以看出来</p>
+
+<ul>
+<li>ForkJoin 只负责并行执行，<strong>不负责如何 拆分和合并</strong></li>
+<li>框架的计算逻辑需要自己实现，包括 <strong>如何拆分任务</strong> 和 <strong>如何合并任务</strong></li>
+<li>整个流程有点类似于 Map / Reduce 模式，<strong>并行小批量计算 + 最终汇总</strong></li>
+</ul>
+
+<h2 id="parallelism">parallelism</h2>
+
+<p>一般构建 <code>ForkJoinPool</code>  有以下几种方式，这个重点关注并行数，目的是<strong>关注在没有CPU限制的虚拟环境中运行时，出现的并行数过多问题</strong></p>
+
+<h3 id="new-forkjoinpool-parallelism">new ForkJoinPool(parallelism)</h3>
+
+<p>指定的多少就是多少</p>
+
+<h3 id="new-forkjoinpool">new ForkJoinPool()</h3>
+
+<p>构造函数空参数，<strong>大部分情况下，并行数就是 CPU 个数</strong></p>
+
+<p>计算方式 <code>Math.min(MAX_CAP, Runtime.getRuntime().availableProcessors()</code>，<code>MAX_CAP</code> = <code>32767</code></p>
+
+<h3 id="forkjoinpool-commonpool">ForkJoinPool.commonPool()</h3>
+
+<ul>
+<li>❤ 读取系统属性设置的 <strong><code>java.util.concurrent.ForkJoinPool.common.parallelism</code></strong> 值</li>
+
+<li><p>如果没有，是 <code>availableProcessors - 1</code> 个</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">static</span> ForkJoinPool <span style="color:#a6e22e">makeCommonPool</span>() {
+...
+    
+String <span style="color:#a6e22e">pp</span> <span style="color:#f92672">=</span> System.<span style="color:#a6e22e">getProperty</span>(<span style="color:#e6db74">&#34;java.util.concurrent.ForkJoinPool.common.parallelism&#34;</span>);
+<span style="color:#66d9ef">if</span> (pp <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>)
+parallelism <span style="color:#f92672">=</span> Integer.<span style="color:#a6e22e">parseInt</span>(pp);
+
+...
+  
+<span style="color:#75715e">// default 1 less than #cores
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> (parallelism <span style="color:#f92672">&lt;</span> 0 <span style="color:#f92672">&amp;&amp;</span> (parallelism <span style="color:#f92672">=</span> Runtime.<span style="color:#a6e22e">getRuntime</span>().<span style="color:#a6e22e">availableProcessors</span>() <span style="color:#f92672">-</span> 1) <span style="color:#f92672">&lt;=</span> 0)
+parallelism <span style="color:#f92672">=</span> 1;
+<span style="color:#66d9ef">if</span> (parallelism <span style="color:#f92672">&gt;</span> MAX_CAP)
+parallelism <span style="color:#f92672">=</span> MAX_CAP;
+  
+...
+}</code></pre></div></li>
+</ul>
+
+<h2 id="常见的-forkjoin-案例">常见的 ForkJoin 案例</h2>
+
+<h3 id="arrays-parallelsort">Arrays.parallelSort</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">static</span> <span style="color:#f92672">&lt;</span>T <span style="color:#a6e22e">extends</span> Comparable<span style="color:#f92672">&lt;?</span> <span style="color:#66d9ef">super</span> <span style="color:#a6e22e">T</span><span style="color:#f92672">&gt;&gt;</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">parallelSort</span>(T[] <span style="color:#a6e22e">a</span>) {
+  <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">n</span> <span style="color:#f92672">=</span> a.<span style="color:#a6e22e">length</span>, p, g;
+
+  <span style="color:#66d9ef">if</span> (n <span style="color:#f92672">&lt;=</span> MIN_ARRAY_SORT_GRAN <span style="color:#f92672">||</span> (p <span style="color:#f92672">=</span> ForkJoinPool.<span style="color:#a6e22e">getCommonPoolParallelism</span>()) <span style="color:#f92672">==</span> 1)
+    <span style="color:#75715e">// “数据个数 &lt;= 8192” 或 “并行数只有 1” 的时候使用 TimSort 算法
+</span><span style="color:#75715e"></span>    TimSort.<span style="color:#a6e22e">sort</span>(a, 0, n, NaturalOrder.<span style="color:#a6e22e">INSTANCE</span>, <span style="color:#66d9ef">null</span>, 0, 0);
+  <span style="color:#66d9ef">else</span>
+    <span style="color:#75715e">// 否则使用 并行排序
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">new</span> ArraysParallelSortHelpers.<span style="color:#a6e22e">FJObject</span>.<span style="color:#a6e22e">Sorter</span><span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span>(...).<span style="color:#a6e22e">invoke</span>();
+}</code></pre></div>
+<h3 id="stream-parallel">stream.parallel()</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">int</span> sum <span style="color:#f92672">=</span> IntStream.<span style="color:#a6e22e">of</span>(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+        <span style="color:#75715e">// 标记并行
+</span><span style="color:#75715e"></span>        .<span style="color:#a6e22e">parallel</span>()
+        <span style="color:#75715e">// 在最终操作（Terminal）的时候选择 串行或并行 执行
+</span><span style="color:#75715e"></span>        .<span style="color:#a6e22e">sum</span>();
+
+<span style="color:#66d9ef">final</span> <span style="color:#f92672">&lt;</span>R<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">R</span> evaluate(TerminalOp<span style="color:#f92672">&lt;</span>E_OUT, R<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">terminalOp</span>) {
+  ...
+  <span style="color:#66d9ef">return</span> isParallel()
+    <span style="color:#f92672">?</span> terminalOp.<span style="color:#a6e22e">evaluateParallel</span>(<span style="color:#66d9ef">this</span>, sourceSpliterator(terminalOp.<span style="color:#a6e22e">getOpFlags</span>()))
+    <span style="color:#f92672">:</span> terminalOp.<span style="color:#a6e22e">evaluateSequential</span>(<span style="color:#66d9ef">this</span>, sourceSpliterator(terminalOp.<span style="color:#a6e22e">getOpFlags</span>()));
+}
+
+<span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> <span style="color:#f92672">&lt;</span>P_IN<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">R</span> evaluateSequential(PipelineHelper<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">helper</span>, Spliterator<span style="color:#f92672">&lt;</span>P_IN<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">spliterator</span>){
+  <span style="color:#66d9ef">return</span> helper.<span style="color:#a6e22e">wrapAndCopyInto</span>(makeSink(), spliterator).<span style="color:#a6e22e">get</span>();
+}
+
+<span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> <span style="color:#f92672">&lt;</span>P_IN<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">R</span> evaluateParallel(PipelineHelper<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">helper</span>, Spliterator<span style="color:#f92672">&lt;</span>P_IN<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">spliterator</span>) {
+  <span style="color:#75715e">// ❤❤❤ ReduceTask
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> ReduceTask<span style="color:#f92672">&lt;&gt;</span>(<span style="color:#66d9ef">this</span>, helper, spliterator).<span style="color:#a6e22e">invoke</span>().<span style="color:#a6e22e">get</span>();
+}</code></pre></div>
+<h2 id="read-more">Read More</h2>
+
+<ul>
+<li><a href="https://www.infoq.cn/article/fork-join-introduction">聊聊并发（八）——Fork/Join 框架介绍</a></li>
+<li><a href="https://blog.csdn.net/weixin_41404773/article/details/80733324">RecursiveTask 和 RecursiveAction 的使用</a></li>
+<li>ifeve Fork/Join框架
+
+<ul>
+<li><a href="http://ifeve.com/fork-join-1/">Fork/Join框架（一）引言</a></li>
+<li><a href="http://ifeve.com/fork-join-2/">Fork/Join框架（二）创建一个Fork/Join池</a></li>
+<li><a href="http://ifeve.com/fork-join-3/">Fork/Join框架（三）加入任务的结果</a></li>
+<li><a href="http://ifeve.com/fork-join-4/">Fork/Join框架（四）异步运行任务</a></li>
+<li><a href="http://ifeve.com/fork-join-5/">Fork/Join框架（五）在任务中抛出异常</a></li>
+<li><a href="http://ifeve.com/fork-join-6/">Fork/Join框架（六）取消任务</a></li>
+</ul></li>
+</ul>
+</article>
+
+      
+<div class="book-footer justify-end">
+  
+  
+  <div>
+    <a href="https://github.com/hello-world-example/Java-Concurrent/edit/master/HuGo/content/docs/java.util.concurrent/ForkJoin.md" target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/edit.svg" alt="Edit" /> Edit this page
+    </a>
+  </div>
+  
+</div>
+
+
+      
+    </div>
+
+    
+  
+
+  <aside class="book-toc level-3 fixed">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#forkjoin">ForkJoin</a>
+<ul>
+<li><a href="#与-executor-的区别">与 Executor 的区别</a></li>
+<li><a href="#核心类">核心类</a></li>
+<li><a href="#编程流程">编程流程</a></li>
+<li><a href="#parallelism">parallelism</a>
+<ul>
+<li><a href="#new-forkjoinpool-parallelism">new ForkJoinPool(parallelism)</a></li>
+<li><a href="#new-forkjoinpool">new ForkJoinPool()</a></li>
+<li><a href="#forkjoinpool-commonpool">ForkJoinPool.commonPool()</a></li>
+</ul></li>
+<li><a href="#常见的-forkjoin-案例">常见的 ForkJoin 案例</a>
+<ul>
+<li><a href="#arrays-parallelsort">Arrays.parallelSort</a></li>
+<li><a href="#stream-parallel">stream.parallel()</a></li>
+</ul></li>
+<li><a href="#read-more">Read More</a></li>
+</ul></li>
+</ul>
+</nav>
+  </aside>
+
+
+
+  </main>
+  
+  
+  
+</body>
+
+</html>

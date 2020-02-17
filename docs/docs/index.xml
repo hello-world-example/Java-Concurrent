@@ -88,11 +88,12 @@ Read More  强大的 CompletableFuture  </description>
     
     <item>
       <title></title>
-      <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/ForkJoinPool/</link>
+      <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/ForkJoin/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/ForkJoinPool/</guid>
-      <description>ForkJoinPool https://www.cnblogs.com/mxh-java/p/12244318.html</description>
+      <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/ForkJoin/</guid>
+      <description>ForkJoin ForkJoin 是一个 基于分而治之算法， 把大任务分割成若干个小任务，最终汇总每个小任务结果后，得到大任务结果的框架。框架基于以下两种操作：
+ fork 操作：把任务分成更小的任务，使用这个框架执行它们 join 操作：等待创建的任务的计算结束  与 Executor 的区别  Executor 是所有工作线程公用一个任务队列，所有的线程消费一个任务队列里面的任务 ForkJoin 是 每个线程都有一个任务对象，每个线程消费各自任务队列的任务   这样的话， ForkJoin 可能会导致一个问题，假如有些任务队列早早被消费完了，则该队列对应的线程就闲置了 Executor 则不会出现该问题，因为只有一个队列，当线程执行完一个任务后，重新从队列中获取任务，直到所有的任务执行换才会闲置   ForkJoin 为了解决任务队列消费速度不一致导致的闲置问题，当一个任务队列执行完之后，就去其他线程的队列里窃取一个任务来执行，还给这个行为起了一个高大上的名字：工作窃取（work-stealing）算法。JDK 1.8 可以简单的通过 ExecutorService executor = Executors.newWorkStealingPool(4) 获取改类型的 Executor 解决了线程闲置问题， Executor 和 ForkJoin 的线程都可达到满负荷运行了，这时候的区别在于两者对数据的竞争状态不一样  Executor 始终都是所有的线程竞争一个队列的数据 ForkJoin 只有在 “窃取” 其他线程任务队里的最后一条数据的时候才产生竞争   核心类  ForkJoinPool：它实现 ExecutorService 接口 和 work-stealing 算法，管理工作线程和提供关于任务的状态和执行的信息 ForkJoinTask： 它是是在 ForkJoinPool 中执行的任务的基类，提供在任务中执行 fork() 和 join() 操作的机制。通常， 为了实现你的 Fork/Join 任务，需要实现 ForkJoinTask 的子类  RecursiveAction 处理没有返回值的任务 RecursiveTask 处理有返回值的任务   编程流程 一个使用 ForkJoin 框架累加的示例</description>
     </item>
     
     <item>
