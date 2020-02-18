@@ -9,7 +9,7 @@ headless: true
   - [Unsafe]({{< relref "/docs/sun.misc/Unsafe.md" >}})
 - **java.util.concurrent.locks**
   - [LockSupport]({{< relref "/docs/java.util.concurrent/locks/LockSupport.md" >}})
-  - ~~AbstractQueuedSynchronizer~~
+  - [AbstractQueuedSynchronizer]({{< relref "/docs/java.util.concurrent/locks/AbstractQueuedSynchronizer.md" >}})
   - ~~ReentrantLock~~
   - ~~<sup>[8]</sup>StampedLock~~
 - **java.util.concurrent**
@@ -18,10 +18,10 @@ headless: true
   - [ExecutorCompletionService]({{< relref "/docs/java.util.concurrent/ExecutorCompletionService.md" >}})
   - [<sup>[7]</sup>ForkJoin]({{< relref "/docs/java.util.concurrent/ForkJoin.md" >}})
   - [<sup>[8]</sup>CompletableFuture]({{< relref "/docs/java.util.concurrent/CompletableFuture.md" >}})
+  - ~~Semaphore~~
   - ~~CountDownLatch~~
   - ~~CyclicBarrier~~
-  - ~~Phaser~~
-  - ~~Semaphore~~
+  - ~~  <sup>[7]</sup> Phaser ~~
 - **java.util.concurrent.atomic**
   - ~~AtomicLong~~
   - ~~<sup>[8]</sup>LongAdder~~

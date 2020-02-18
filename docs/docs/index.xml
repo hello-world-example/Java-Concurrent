@@ -127,7 +127,11 @@ public interface Future&amp;lt;V&amp;gt; { // 等待任务结束，获取结果 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/locks/AbstractQueuedSynchronizer/</guid>
-      <description></description>
+      <description>AQS ~ AbstractQueuedSynchronizer  javadoc： java.util.concurrent.locks.AbstractQueuedSynchronizer
+ AbstractQueuedSynchronizer 直译过来就是 抽象排队同步器，简称 AQS，可以把它认为是规定多线程访问共享资源的框架。
+继承关系 从以下部分继承关系中可以看出，j.u.c 包下面的一些核心类，都继承自 AQS。
+ AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer  Sync in ReentrantLock (java.util.concurrent.locks) __ FairSync in ReentrantLock (java.util.concurrent.locks) __ NonfairSync in ReentrantLock (java.util.concurrent.locks) Sync in ReentrantReadWriteLock (java.util.concurrent.locks) Sync in CountDownLatch (java.util.concurrent) Sync in Semaphore (java.util.concurrent) Worker in ThreadPoolExecutor (java.util.concurrent)   队列 Node 结构 AQS 主要通过内置的 FIFO队列 来完成资源获取线程的排队工作。
+static final class Node { // 共享模式  static final Node SHARED = new Node(); // 独占模式  static final Node EXCLUSIVE = null; /** 取消状态，该状态是最终状态，不会被改变， */ static final int CANCELLED = 1; // 后继节点 被 park 需要 unpark（被唤醒）  // 后继节点如果发现 前驱节点是 SIGNAL，park 自己  static final int SIGNAL = -1; /** 表名当前线程正在等待 condition，也就是在 condition 队列中 */ static final int CONDITION = -2; // SIGNAL 一般用来独占末实现，PROPAGATE 用在 共享模式下，该状态线程不会 park，可以获取到资源  static final int PROPAGATE = -3; /* 当前节点状态，默认是0.</description>
     </item>
     
     <item>

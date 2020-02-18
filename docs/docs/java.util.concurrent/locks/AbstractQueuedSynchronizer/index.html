@@ -65,7 +65,7 @@ https://github.com/alex-shpak/hugo-book
 
 <ul>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/">LockSupport</a></li>
-<li><del>AbstractQueuedSynchronizer</del></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/AbstractQueuedSynchronizer/">AbstractQueuedSynchronizer</a></li>
 <li><del>ReentrantLock</del></li>
 <li><del><sup>[8]</sup>StampedLock</del></li>
 </ul></li>
@@ -77,10 +77,10 @@ https://github.com/alex-shpak/hugo-book
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorCompletionService/">ExecutorCompletionService</a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoin/"><sup>[7]</sup>ForkJoin</a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/CompletableFuture/"><sup>[8]</sup>CompletableFuture</a></li>
+<li><del>Semaphore</del></li>
 <li><del>CountDownLatch</del></li>
 <li><del>CyclicBarrier</del></li>
-<li><del>Phaser</del></li>
-<li><del>Semaphore</del></li>
+<li>~~  <sup>[7]</sup> Phaser ~~</li>
 </ul></li>
 <li><strong>java.util.concurrent.atomic</strong>
 
@@ -120,7 +120,438 @@ https://github.com/alex-shpak/hugo-book
 </header>
 
       
-<article class="markdown"></article>
+<article class="markdown">
+
+<h1 id="aqs-abstractqueuedsynchronizer">AQS ~ AbstractQueuedSynchronizer</h1>
+
+<blockquote>
+<p>javadoc： <a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html">java.util.concurrent.locks.AbstractQueuedSynchronizer</a></p>
+</blockquote>
+
+<p><code>AbstractQueuedSynchronizer</code> 直译过来就是 <strong>抽象排队同步器</strong>，简称 <code>AQS</code>，可以把它认为是<strong>规定多线程访问共享资源的框架</strong>。</p>
+
+<h2 id="继承关系">继承关系</h2>
+
+<p>从以下部分继承关系中可以看出，<code>j.u.c</code> 包下面的一些核心类，都继承自 AQS。</p>
+
+<ul>
+<li><strong>AbstractQueuedSynchronizer</strong>  extends <strong>AbstractOwnableSynchronizer</strong>
+
+<ul>
+<li><strong>Sync</strong> in <strong>ReentrantLock</strong> (java.util.concurrent.locks)</li>
+<li>__ <strong>FairSync</strong> in ReentrantLock (java.util.concurrent.locks)</li>
+<li>__ <strong>NonfairSync</strong> in ReentrantLock (java.util.concurrent.locks)</li>
+<li>Sync in <strong>ReentrantReadWriteLock</strong> (java.util.concurrent.locks)</li>
+<li>Sync in <strong>CountDownLatch</strong> (java.util.concurrent)</li>
+<li>Sync in <strong>Semaphore</strong> (java.util.concurrent)</li>
+<li>Worker in <strong>ThreadPoolExecutor</strong> (java.util.concurrent)</li>
+</ul></li>
+</ul>
+
+<h2 id="队列-node-结构">队列 Node 结构</h2>
+
+<p><code>AQS</code> 主要通过内置的 FIFO队列 来完成资源获取线程的排队工作。</p>
+
+<p><img src="../_images/AbstractQueuedSynchronizer-1.png" alt="" /></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">static</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Node</span> {
+  <span style="color:#75715e">// 共享模式
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">static</span> <span style="color:#a6e22e">final</span> Node <span style="color:#a6e22e">SHARED</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Node();
+  <span style="color:#75715e">// 独占模式
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">static</span> <span style="color:#a6e22e">final</span> Node <span style="color:#a6e22e">EXCLUSIVE</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>;
+
+  
+  <span style="color:#75715e">/** 取消状态，该状态是最终状态，不会被改变， */</span>
+  <span style="color:#66d9ef">static</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">CANCELLED</span> <span style="color:#f92672">=</span>  1;
+  <span style="color:#75715e">// 后继节点 被 park 需要 unpark（被唤醒）
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 后继节点如果发现 前驱节点是 SIGNAL，park 自己
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">static</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">SIGNAL</span>    <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>1;
+  <span style="color:#75715e">/** 表名当前线程正在等待 condition，也就是在 condition 队列中 */</span>
+  <span style="color:#66d9ef">static</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">CONDITION</span> <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>2;
+  <span style="color:#75715e">// SIGNAL 一般用来独占末实现，PROPAGATE 用在 共享模式下，该状态线程不会 park，可以获取到资源
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">static</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">PROPAGATE</span> <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>3;
+
+  <span style="color:#75715e">/* 当前节点状态，默认是0. */</span>
+  <span style="color:#66d9ef">volatile</span> <span style="color:#a6e22e">int</span> waitStatus;
+
+  
+  <span style="color:#75715e">/* 前驱结点 */</span>
+  <span style="color:#66d9ef">volatile</span> <span style="color:#a6e22e">Node</span> prev;
+  <span style="color:#75715e">// 后继节点
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 该字段为空，不一定意味着该节点在队列的结尾，需要从尾部扫描 prev 来进行双重检查
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">volatile</span> <span style="color:#a6e22e">Node</span> next;
+
+  
+  <span style="color:#75715e">// 当前排队的线程
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">volatile</span> <span style="color:#a6e22e">Thread</span> thread;
+
+  <span style="color:#75715e">// 下一个等待节点的 共享/独占模式标记
+</span><span style="color:#75715e"></span>  Node <span style="color:#a6e22e">nextWaiter</span>;
+
+  <span style="color:#75715e">// 获取 前驱节点 prev ，并进行非 null 校验
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Node</span> predecessor() <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">NullPointerException</span> {
+    ...
+  }
+
+  Node()  {  <span style="color:#75715e">/* 用户创建 head阶段 或 标记 SHARED 共享节点 */</span> }
+  <span style="color:#75715e">// mode = SHARED | EXCLUSIVE
+</span><span style="color:#75715e"></span>  Node(Thread <span style="color:#a6e22e">thread</span>, Node <span style="color:#a6e22e">mode</span>) {  <span style="color:#75715e">/* Used by addWaiter */</span> }
+  <span style="color:#75715e">// waitStatus = CANCELLED | SIGNAL | CONDITION | PROPAGATE
+</span><span style="color:#75715e"></span>  Node(Thread <span style="color:#a6e22e">thread</span>, <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">waitStatus</span>) { <span style="color:#75715e">/* Used by Condition */</span> }
+}</code></pre></div>
+<h2 id="获取独占资源-锁">获取独占资源(锁)</h2>
+
+<h3 id="acquire-lock">❤ acquire (lock) ❤</h3>
+
+<p>lock 方法的实现，获取资源</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">acquire</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">arg</span>) {
+  <span style="color:#75715e">// 1. tryAcquire 子类自己实现
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 2. acquireQueued 通行 或者 park 阻塞
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>tryAcquire(arg) <span style="color:#f92672">&amp;&amp;</span> acquireQueued(addWaiter(Node.<span style="color:#a6e22e">EXCLUSIVE</span>), arg))
+    <span style="color:#75715e">// 如果竞争失败过，标记为被中断
+</span><span style="color:#75715e"></span>    selfInterrupt();
+}</code></pre></div>
+<h3 id="addwaiter-入队">addWaiter 入队</h3>
+
+<p>入队操作： <strong>把当前线程 包装成 Node 添加到 队尾</strong>，返回包装的 Node 节点</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">Node</span> addWaiter(Node <span style="color:#a6e22e">mode</span>) {
+  Node <span style="color:#a6e22e">node</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Node(Thread.<span style="color:#a6e22e">currentThread</span>(), mode);
+  <span style="color:#75715e">// 先快速尝试添加
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 不知道问什么不直接调用 enq(), 入队逻辑都是重复的，难道是为了节省 for语句带来的损耗？
+</span><span style="color:#75715e"></span>  Node <span style="color:#a6e22e">pred</span> <span style="color:#f92672">=</span> tail;
+  <span style="color:#66d9ef">if</span> (pred <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>) {
+    <span style="color:#75715e">// 当前节点的 前驱节点 =&gt; 队尾
+</span><span style="color:#75715e"></span>    node.<span style="color:#a6e22e">prev</span> <span style="color:#f92672">=</span> pred;
+    <span style="color:#75715e">// CAS： 队尾节点 修改为 当前节点
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (compareAndSetTail(pred, node)) {
+      <span style="color:#75715e">// 原队尾节点的 后继节点 =&gt; 当前节点 
+</span><span style="color:#75715e"></span>      pred.<span style="color:#a6e22e">next</span> <span style="color:#f92672">=</span> node;
+      <span style="color:#66d9ef">return</span> node;
+    }
+  }
+  enq(node);
+  <span style="color:#66d9ef">return</span> node;
+}
+
+
+<span style="color:#66d9ef">private</span> <span style="color:#a6e22e">Node</span> enq(<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Node</span> node) {
+  <span style="color:#66d9ef">for</span> (;;) {
+    Node <span style="color:#a6e22e">t</span> <span style="color:#f92672">=</span> tail;
+    <span style="color:#66d9ef">if</span> (t <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span>) { 
+      <span style="color:#75715e">// 初始化队尾节点
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> (compareAndSetHead(<span style="color:#66d9ef">new</span> Node()))
+        tail <span style="color:#f92672">=</span> head;
+    } <span style="color:#66d9ef">else</span> {
+      <span style="color:#75715e">// 当前节点的 前驱节点 =&gt; 队尾
+</span><span style="color:#75715e"></span>      node.<span style="color:#a6e22e">prev</span> <span style="color:#f92672">=</span> t;
+      <span style="color:#75715e">// CAS： 队尾节点 修改为 当前节点
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> (compareAndSetTail(t, node)) {
+        <span style="color:#75715e">// 原队尾节点的 后继节点 =&gt; 当前节点 
+</span><span style="color:#75715e"></span>        t.<span style="color:#a6e22e">next</span> <span style="color:#f92672">=</span> node;
+        <span style="color:#75715e">// 返回”原“队尾节点（新队尾节点是 node）
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> t;
+      }
+    }
+  }
+}</code></pre></div>
+<h3 id="acquirequeued">acquireQueued</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">boolean</span> acquireQueued(<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Node</span> node, <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">arg</span>) {
+  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">failed</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>;
+  <span style="color:#66d9ef">try</span> {
+    <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">interrupted</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span>;
+    <span style="color:#66d9ef">for</span> (;;) {
+      <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Node</span> p <span style="color:#f92672">=</span> node.<span style="color:#a6e22e">predecessor</span>();
+      <span style="color:#75715e">// 1. 当前节点的前驱节点就是 head， 说明该节点是队列中的第一个节点
+</span><span style="color:#75715e"></span>      <span style="color:#75715e">// 2. tryAcquire 是自己实现的逻辑，需要根据自己维护 arg 来判断是否应该 Acquire 执行权
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> (p <span style="color:#f92672">==</span> head <span style="color:#f92672">&amp;&amp;</span> tryAcquire(arg)) {
+        <span style="color:#75715e">// 当前节点设置为 头节点
+</span><span style="color:#75715e"></span>        setHead(node);
+        p.<span style="color:#a6e22e">next</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>; <span style="color:#75715e">// help GC
+</span><span style="color:#75715e"></span>        failed <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span>;
+        <span style="color:#66d9ef">return</span> interrupted;
+      }
+      
+      <span style="color:#75715e">// 如果当前节点不是 第一个节点
+</span><span style="color:#75715e"></span>      <span style="color:#75715e">// 1. 判断 获取（竞争）失败后，是否需要 park 阻塞（如果前驱节点是 SIGNAL 则 park ）
+</span><span style="color:#75715e"></span>      <span style="color:#75715e">// 2. park 阻塞当前线程，如果需要的话
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> (shouldParkAfterFailedAcquire(p, node) <span style="color:#f92672">&amp;&amp;</span> parkAndCheckInterrupt())
+        <span style="color:#75715e">// 如果竞争失败过，标记为被中断
+</span><span style="color:#75715e"></span>        interrupted <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>;
+
+      <span style="color:#75715e">// 无限循环，直到轮到当前节点
+</span><span style="color:#75715e"></span>    } 
+  } <span style="color:#66d9ef">finally</span> {
+    <span style="color:#66d9ef">if</span> (failed)
+      cancelAcquire(node);
+  }
+}</code></pre></div>
+<h3 id="shouldparkafterfailedacquire">shouldParkAfterFailedAcquire</h3>
+
+<p>主要用来 <strong>判断前置节点是否是 SIGNAL 状态</strong>，如果不是，跳过丢掉，<strong>或设置为 SIGNAL 状态</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">shouldParkAfterFailedAcquire</span>(Node <span style="color:#a6e22e">pred</span>, Node <span style="color:#a6e22e">node</span>) {
+  <span style="color:#75715e">// 前置节点的状态
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">ws</span> <span style="color:#f92672">=</span> pred.<span style="color:#a6e22e">waitStatus</span>;
+  <span style="color:#75715e">// 如果前置节点是 SIGNAL（唤醒状态|已经竞争成功），则当前节点就 park，等待被 unpark
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (ws <span style="color:#f92672">==</span> Node.<span style="color:#a6e22e">SIGNAL</span>)
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+  
+  <span style="color:#75715e">// 如果前置节点的状态是 CANCELLED（被取消的）就跳过去，
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 不park，acquireQueued 重新判断 当前线程是否竞争成功
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (ws <span style="color:#f92672">&gt;</span> 0) {
+    <span style="color:#66d9ef">do</span> {
+      node.<span style="color:#a6e22e">prev</span> <span style="color:#f92672">=</span> pred <span style="color:#f92672">=</span> pred.<span style="color:#a6e22e">prev</span>;
+    } <span style="color:#66d9ef">while</span> (pred.<span style="color:#a6e22e">waitStatus</span> <span style="color:#f92672">&gt;</span> 0);
+    pred.<span style="color:#a6e22e">next</span> <span style="color:#f92672">=</span> node;
+    
+  } <span style="color:#66d9ef">else</span> {
+    <span style="color:#75715e">// 把前置节点的 状态标记为 SIGNAL，
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 在下次 acquireQueued 循环中，如果前置节点仍然是 SIGNAL，则 park 当前节点
+</span><span style="color:#75715e"></span>    compareAndSetWaitStatus(pred, ws, Node.<span style="color:#a6e22e">SIGNAL</span>);
+  }
+  <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+}</code></pre></div>
+<h2 id="释放独占资源-锁">释放独占资源(锁)</h2>
+
+<h3 id="release-unlock">❤ release(unlock) ❤</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">release</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">arg</span>) {
+  <span style="color:#75715e">// 子类实现
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (tryRelease(arg)) {
+    Node <span style="color:#a6e22e">h</span> <span style="color:#f92672">=</span> head;
+    <span style="color:#66d9ef">if</span> (h <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> h.<span style="color:#a6e22e">waitStatus</span> <span style="color:#f92672">!=</span> 0)
+      <span style="color:#75715e">// 
+</span><span style="color:#75715e"></span>      unparkSuccessor(h);
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+  }
+  <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+}</code></pre></div>
+<h3 id="unparksuccessor">unparkSuccessor</h3>
+
+<p>unpark 唤醒后继节点</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">void</span> unparkSuccessor(Node <span style="color:#a6e22e">node</span>) {
+  <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">ws</span> <span style="color:#f92672">=</span> node.<span style="color:#a6e22e">waitStatus</span>;
+  <span style="color:#75715e">// 还原为初始化状态
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (ws <span style="color:#f92672">&lt;</span> 0)
+    compareAndSetWaitStatus(node, ws, 0);
+
+  Node <span style="color:#a6e22e">s</span> <span style="color:#f92672">=</span> node.<span style="color:#a6e22e">next</span>;
+  <span style="color:#75715e">// 如果没有 后继节点，或者后继节点被取消
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (s <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">||</span> s.<span style="color:#a6e22e">waitStatus</span> <span style="color:#f92672">&gt;</span> 0) {
+    s <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>;
+    <span style="color:#75715e">// 从后往前找当前节点的下一个节点
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">for</span> (Node <span style="color:#a6e22e">t</span> <span style="color:#f92672">=</span> tail; t <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> t <span style="color:#f92672">!=</span> node; t <span style="color:#f92672">=</span> t.<span style="color:#a6e22e">prev</span>)
+      <span style="color:#66d9ef">if</span> (t.<span style="color:#a6e22e">waitStatus</span> <span style="color:#f92672">&lt;=</span> 0)
+        s <span style="color:#f92672">=</span> t;
+  }
+  <span style="color:#75715e">// 唤醒下一个节点
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (s <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>)
+    LockSupport.<span style="color:#a6e22e">unpark</span>(s.<span style="color:#a6e22e">thread</span>);
+}</code></pre></div>
+<h2 id="获取共享资源-锁">获取共享资源(锁)</h2>
+
+<h3 id="acquireshared">acquireShared</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">acquireShared</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">arg</span>) {
+  <span style="color:#75715e">// tryAcquireShared 需要子类实现
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (tryAcquireShared(arg) <span style="color:#f92672">&lt;</span> 0)
+    doAcquireShared(arg);
+}
+
+<span style="color:#66d9ef">private</span> <span style="color:#a6e22e">void</span> doAcquireShared(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">arg</span>) {
+  <span style="color:#75715e">// 入队操作： 把当前线程 包装成 Node 添加到 队尾，返回包装的 Node 节点
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Node</span> node <span style="color:#f92672">=</span> addWaiter(Node.<span style="color:#a6e22e">SHARED</span>);
+  
+  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">failed</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>;
+  <span style="color:#66d9ef">try</span> {
+    <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">interrupted</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span>;
+    <span style="color:#66d9ef">for</span> (;;) {
+      <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Node</span> p <span style="color:#f92672">=</span> node.<span style="color:#a6e22e">predecessor</span>();
+      <span style="color:#75715e">// 当前节点的前驱节点就是 head， 说明该节点是队列中的第一个节点
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> (p <span style="color:#f92672">==</span> head) {
+        <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">r</span> <span style="color:#f92672">=</span> tryAcquireShared(arg);
+        <span style="color:#66d9ef">if</span> (r <span style="color:#f92672">&gt;=</span> 0) {
+          setHeadAndPropagate(node, r);
+          p.<span style="color:#a6e22e">next</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>; <span style="color:#75715e">// help GC
+</span><span style="color:#75715e"></span>          <span style="color:#66d9ef">if</span> (interrupted)
+            selfInterrupt();
+          failed <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span>;
+          <span style="color:#66d9ef">return</span>;
+        }
+      }
+      <span style="color:#66d9ef">if</span> (shouldParkAfterFailedAcquire(p, node) <span style="color:#f92672">&amp;&amp;</span> parkAndCheckInterrupt())
+        interrupted <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>;
+    }
+  } <span style="color:#66d9ef">finally</span> {
+    <span style="color:#66d9ef">if</span> (failed)
+      cancelAcquire(node);
+  }
+}</code></pre></div>
+<h2 id="释放共享资源-锁">释放共享资源(锁)</h2>
+
+<h3 id="releaseshared">releaseShared</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">releaseShared</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">arg</span>) {
+  <span style="color:#66d9ef">if</span> (tryReleaseShared(arg)) {
+    doReleaseShared();
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+  }
+  <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+}
+
+
+<span style="color:#66d9ef">private</span> <span style="color:#a6e22e">void</span> doReleaseShared() {
+  <span style="color:#66d9ef">for</span> (;;) {
+    Node <span style="color:#a6e22e">h</span> <span style="color:#f92672">=</span> head;
+    <span style="color:#66d9ef">if</span> (h <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> h <span style="color:#f92672">!=</span> tail) {
+      <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">ws</span> <span style="color:#f92672">=</span> h.<span style="color:#a6e22e">waitStatus</span>;
+      <span style="color:#66d9ef">if</span> (ws <span style="color:#f92672">==</span> Node.<span style="color:#a6e22e">SIGNAL</span>) {
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>compareAndSetWaitStatus(h, Node.<span style="color:#a6e22e">SIGNAL</span>, 0))
+          <span style="color:#66d9ef">continue</span>;               <span style="color:#75715e">// loop to recheck cases
+</span><span style="color:#75715e"></span>        unparkSuccessor(h);
+      }
+      <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> (ws <span style="color:#f92672">==</span> 0 <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">!</span>compareAndSetWaitStatus(h, 0, Node.<span style="color:#a6e22e">PROPAGATE</span>))
+        <span style="color:#66d9ef">continue</span>;                <span style="color:#75715e">// loop on failed CAS
+</span><span style="color:#75715e"></span>    }
+    <span style="color:#66d9ef">if</span> (h <span style="color:#f92672">==</span> head)               <span style="color:#75715e">// loop if head changed
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">break</span>;
+  }
+}</code></pre></div>
+<h2 id="condition">Condition</h2>
+
+<blockquote>
+<p><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/Condition.html">java.util.concurrent.locks.Condition</a></p>
+</blockquote>
+
+<ul>
+<li><p><code>Lock</code> 替代了 <code>synchronized</code> 语法结构</p></li>
+
+<li><p><code>Condition</code> 替代了 <code>Object</code> 的 <code>wait</code> / <code>notify</code> 方法</p></li>
+</ul>
+
+<h3 id="接口签名">接口签名</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">interface</span> Condition {
+  <span style="color:#75715e">// 使线程在接到 signal 信号 或 被中断 之前一直处于等待状态
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">await</span>() <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span>;
+  <span style="color:#75715e">// 使线程在接到 signal 信号之前一直处于等待状态
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">awaitUninterruptibly</span>();
+  <span style="color:#75715e">// 等待指定的时间，单位纳秒
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">awaitNanos</span>(<span style="color:#66d9ef">long</span> <span style="color:#a6e22e">nanosTimeout</span>) <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span>;
+  <span style="color:#75715e">// 等待指定的时间，自定义单位
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">await</span>(<span style="color:#66d9ef">long</span> <span style="color:#a6e22e">time</span>, TimeUnit <span style="color:#a6e22e">unit</span>) <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span>;
+  <span style="color:#75715e">// 等待到 指定的时间
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">awaitUntil</span>(Date <span style="color:#a6e22e">deadline</span>) <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span>;
+  <span style="color:#75715e">// 唤醒一个
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">signal</span>();
+  <span style="color:#75715e">// 唤醒所有
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">signalAll</span>();
+}</code></pre></div>
+<h3 id="实现">实现</h3>
+
+<ul>
+<li>Condition (java.util.concurrent.locks)
+
+<ul>
+<li><strong>ConditionObject</strong> in <strong>AbstractQueuedSynchronizer</strong> (java.util.concurrent.locks)</li>
+<li>ConditionObject in <strong>AbstractQueuedLongSynchronizer</strong> (java.util.concurrent.locks)</li>
+</ul></li>
+</ul>
+
+<h3 id="await">❤ await ❤</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">await</span>() <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span> {
+  <span style="color:#75715e">// 如果线程已经被中断，抛出 InterruptedException 异常
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (Thread.<span style="color:#a6e22e">interrupted</span>())
+    <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> InterruptedException();
+  
+  <span style="color:#75715e">// 增加当前线程到 Condition 等待队列，当前节点的状态是 CONDITION
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// new Node(Thread.currentThread(), Node.CONDITION);
+</span><span style="color:#75715e"></span>  Node <span style="color:#a6e22e">node</span> <span style="color:#f92672">=</span> addConditionWaiter();
+  <span style="color:#75715e">// 调用 release 方法释放 AQS 等待队列的线程，即第一节点的线程
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// ❤ 因为只有获取到执行权(获取到锁)，才可以调用 await 方法，与 synchronized 类似
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">savedState</span> <span style="color:#f92672">=</span> fullyRelease(node);
+  
+  <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">interruptMode</span> <span style="color:#f92672">=</span> 0;
+  <span style="color:#75715e">// 如果不在同步队列，park 当前线程
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">while</span> (<span style="color:#f92672">!</span>isOnSyncQueue(node)) {
+    LockSupport.<span style="color:#a6e22e">park</span>(<span style="color:#66d9ef">this</span>);
+    <span style="color:#75715e">// 被 unpark/signal 后，判断当前线程有没有被标记为 中断
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 0 代表没有，循环执行 while (!isOnSyncQueue(node)) 
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> ((interruptMode <span style="color:#f92672">=</span> checkInterruptWhileWaiting(node)) <span style="color:#f92672">!=</span> 0)
+      <span style="color:#66d9ef">break</span>;
+  }
+  
+  <span style="color:#75715e">// 到这里 Condition 等待队列 里面的 Node， 已经被添加到 AQS 队列
+</span><span style="color:#75715e"></span>  
+  <span style="color:#75715e">// 被唤醒后，尝试获取执行权
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (acquireQueued(node, savedState) <span style="color:#f92672">&amp;&amp;</span> interruptMode <span style="color:#f92672">!=</span> THROW_IE)
+    interruptMode <span style="color:#f92672">=</span> REINTERRUPT;
+  <span style="color:#75715e">// clean up if cancelled
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (node.<span style="color:#a6e22e">nextWaiter</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>) 
+    unlinkCancelledWaiters();
+  <span style="color:#75715e">// 中断异处理
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (interruptMode <span style="color:#f92672">!=</span> 0)
+    reportInterruptAfterWait(interruptMode);
+}</code></pre></div>
+<h3 id="signal">❤ signal ❤</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">signal</span>() {
+  <span style="color:#75715e">// 判断当前线程是否持有锁，[该方法需要子类实现]
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>isHeldExclusively())
+    <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> IllegalMonitorStateException();
+  
+  Node <span style="color:#a6e22e">first</span> <span style="color:#f92672">=</span> firstWaiter;
+  <span style="color:#66d9ef">if</span> (first <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>)
+    doSignal(first);
+}</code></pre></div>
+<h3 id="dosignal">doSignal</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">void</span> doSignal(Node <span style="color:#a6e22e">first</span>) {
+  <span style="color:#66d9ef">do</span> {
+    <span style="color:#66d9ef">if</span> ( (firstWaiter <span style="color:#f92672">=</span> first.<span style="color:#a6e22e">nextWaiter</span>) <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> )
+      lastWaiter <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>;
+    
+    first.<span style="color:#a6e22e">nextWaiter</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>;
+  } <span style="color:#66d9ef">while</span> (<span style="color:#f92672">!</span>transferForSignal(first) <span style="color:#f92672">&amp;&amp;</span> (first <span style="color:#f92672">=</span> firstWaiter) <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>);
+}</code></pre></div>
+<h3 id="transferforsignal">transferForSignal</h3>
+
+<p>把 condition 队列的节点转移到  sync 队列</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">boolean</span> transferForSignal(Node <span style="color:#a6e22e">node</span>) {
+  <span style="color:#75715e">// 当前节点状态置为初始状态，如果失败，则说明被去掉了
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>compareAndSetWaitStatus(node, Node.<span style="color:#a6e22e">CONDITION</span>, 0))
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+
+  <span style="color:#75715e">// ❤ 请求入队，返回上一个一节
+</span><span style="color:#75715e"></span>  Node <span style="color:#a6e22e">p</span> <span style="color:#f92672">=</span> enq(node);
+  
+  <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">ws</span> <span style="color:#f92672">=</span> p.<span style="color:#a6e22e">waitStatus</span>;
+  <span style="color:#75715e">// 如果上一个节点被取消 || 入队后上一个节点状态变化，则解锁当前节点
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (ws <span style="color:#f92672">&gt;</span> 0 <span style="color:#f92672">||</span> <span style="color:#f92672">!</span>compareAndSetWaitStatus(p, ws, Node.<span style="color:#a6e22e">SIGNAL</span>))
+    LockSupport.<span style="color:#a6e22e">unpark</span>(node.<span style="color:#a6e22e">thread</span>);
+  <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+}</code></pre></div>
+<h2 id="需要实现的方法">需要实现的方法</h2>
+
+<p><code>AQS</code> 使用的 <strong>模版方法设计模式</strong>，本身定义好了资源获取与释放的主要流程，自定义的时候可以实现以下一个主要的方法</p>
+
+<ul>
+<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryAcquire(int)"><code>tryAcquire(int)</code></a></li>
+<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryRelease(int)"><code>tryRelease(int)</code></a></li>
+<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryAcquireShared(int)"><code>tryAcquireShared(int)</code></a></li>
+<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryReleaseShared(int)"><code>tryReleaseShared(int)</code></a></li>
+<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#isHeldExclusively()"><code>isHeldExclusively()</code></a></li>
+</ul>
+
+<h2 id="read-more">Read More</h2>
+
+<ul>
+<li><p>❤❤❤ Inside AbstractQueuedSynchronizer ❤❤❤=</p>
+
+<ul>
+<li><a href="https://www.iteye.com/blog/1336409">Inside AbstractQueuedSynchronizer (1)</a></li>
+<li><a href="https://www.iteye.com/blog/1336920">Inside AbstractQueuedSynchronizer (2)</a></li>
+<li><a href="https://www.iteye.com/blog/1337374">Inside AbstractQueuedSynchronizer (3)</a></li>
+<li><a href="https://www.iteye.com/blog/1337539">Inside AbstractQueuedSynchronizer (4)</a></li>
+</ul></li>
+
+<li><p><a href="http://ifeve.com/introduce-abstractqueuedsynchronizer/">AbstractQueuedSynchronizer 的介绍和原理分析</a></p></li>
+
+<li><p><a href="https://www.iteye.com/topic/1114231">关于 Java 并发包下 AQS 队列的一点点看法</a></p></li>
+</ul>
+</article>
 
       
 <div class="book-footer justify-between">
@@ -147,6 +578,49 @@ https://github.com/alex-shpak/hugo-book
 
     
   
+
+  <aside class="book-toc level-3 fixed">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#aqs-abstractqueuedsynchronizer">AQS ~ AbstractQueuedSynchronizer</a>
+<ul>
+<li><a href="#继承关系">继承关系</a></li>
+<li><a href="#队列-node-结构">队列 Node 结构</a></li>
+<li><a href="#获取独占资源-锁">获取独占资源(锁)</a>
+<ul>
+<li><a href="#acquire-lock">❤ acquire (lock) ❤</a></li>
+<li><a href="#addwaiter-入队">addWaiter 入队</a></li>
+<li><a href="#acquirequeued">acquireQueued</a></li>
+<li><a href="#shouldparkafterfailedacquire">shouldParkAfterFailedAcquire</a></li>
+</ul></li>
+<li><a href="#释放独占资源-锁">释放独占资源(锁)</a>
+<ul>
+<li><a href="#release-unlock">❤ release(unlock) ❤</a></li>
+<li><a href="#unparksuccessor">unparkSuccessor</a></li>
+</ul></li>
+<li><a href="#获取共享资源-锁">获取共享资源(锁)</a>
+<ul>
+<li><a href="#acquireshared">acquireShared</a></li>
+</ul></li>
+<li><a href="#释放共享资源-锁">释放共享资源(锁)</a>
+<ul>
+<li><a href="#releaseshared">releaseShared</a></li>
+</ul></li>
+<li><a href="#condition">Condition</a>
+<ul>
+<li><a href="#接口签名">接口签名</a></li>
+<li><a href="#实现">实现</a></li>
+<li><a href="#await">❤ await ❤</a></li>
+<li><a href="#signal">❤ signal ❤</a></li>
+<li><a href="#dosignal">doSignal</a></li>
+<li><a href="#transferforsignal">transferForSignal</a></li>
+</ul></li>
+<li><a href="#需要实现的方法">需要实现的方法</a></li>
+<li><a href="#read-more">Read More</a></li>
+</ul></li>
+</ul>
+</nav>
+  </aside>
 
 
 
