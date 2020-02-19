@@ -72,15 +72,15 @@ https://github.com/alex-shpak/hugo-book
 <li><strong>java.util.concurrent</strong>
 
 <ul>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService</a></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorCompletionService/">ExecutorCompletionService</a></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoin/"><sup>[7]</sup>ForkJoin</a></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/CompletableFuture/"><sup>[8]</sup>CompletableFuture</a></li>
-<li><del>Semaphore</del></li>
-<li><del>CountDownLatch</del></li>
-<li><del>CyclicBarrier</del></li>
-<li>~~  <sup>[7]</sup> Phaser ~~</li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService<sup>♨</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorCompletionService/">ExecutorCompletionService<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoin/"><sup>[7]</sup>ForkJoin<sup>♨</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CompletableFuture/"><sup>[8]</sup>CompletableFuture<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CountDownLatch/">CountDownLatch <sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Semaphore/">Semaphore<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CyclicBarrier/">CyclicBarrier<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Phaser/"><sup>[7]</sup> Phaser<sup>🔒</sup></a></li>
 </ul></li>
 <li><strong>java.util.concurrent.atomic</strong>
 
@@ -120,7 +120,150 @@ https://github.com/alex-shpak/hugo-book
 </header>
 
       
-<article class="markdown"></article>
+<article class="markdown">
+
+<h1 id="countdownlatch">CountDownLatch</h1>
+
+<p><code>CountDownLatch</code> 基于 <code>AQS</code> 同步框架，允许一个或多个线程 <code>await</code> 等待，直到指定数量(<code>count</code>) 的操作完成(<code>countDown</code>)</p>
+
+<p>初始 <code>CountDownLatch</code> 时，会给定 <code>count</code>，<strong>调用 <code>await</code> 方法时会阻塞当前线程</strong>，直到 <code>count</code> 减小到 0，<strong><code>countDown</code> 会使 <code>count</code> 减 1</strong>，该同步器<strong>不能被重置</strong>。</p>
+
+<h2 id="如何使用">如何使用</h2>
+
+<h3 id="主线程-等待-子线程">主线程 等待 子线程</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">count</span> <span style="color:#f92672">=</span> 3;
+
+CountDownLatch <span style="color:#a6e22e">countDownLatch</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> CountDownLatch(count);
+
+<span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">=</span> 0; i <span style="color:#f92672">&lt;</span> 3; i<span style="color:#f92672">++</span>) {
+  <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">finalI</span> <span style="color:#f92672">=</span> i;
+  <span style="color:#66d9ef">new</span> Thread(() <span style="color:#f92672">-&gt;</span> {
+    ThreadUtil.<span style="color:#a6e22e">sleep</span>(finalI, TimeUnit.<span style="color:#a6e22e">SECONDS</span>);
+
+    Tool.<span style="color:#a6e22e">println</span>(Thread.<span style="color:#a6e22e">currentThread</span>().<span style="color:#a6e22e">getName</span>() <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; 完成&#34;</span>);
+    <span style="color:#75715e">// count - 1
+</span><span style="color:#75715e"></span>    countDownLatch.<span style="color:#a6e22e">countDown</span>();
+  }).<span style="color:#a6e22e">start</span>();
+}
+
+Tool.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;等待 &#34;</span> <span style="color:#f92672">+</span> count <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;个 任务完成&#34;</span>);
+<span style="color:#75715e">// 阻塞当前线程
+</span><span style="color:#75715e"></span>countDownLatch.<span style="color:#a6e22e">await</span>();
+Tool.<span style="color:#a6e22e">println</span>(count <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;个 任务都已完成!! &#34;</span>);</code></pre></div>
+<blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; <span style="color:#ae81ff">564</span> : 等待 3个 任务完成
+&gt; <span style="color:#ae81ff">564</span> : Thread-0 完成
+&gt; <span style="color:#ae81ff">565</span> : Thread-1 完成
+&gt; <span style="color:#ae81ff">566</span> : Thread-2 完成
+&gt; <span style="color:#ae81ff">566</span> : 3个 任务都已完成!! 
+&gt; <span style="color:#e6db74">```</span>
+
+<span style="color:#75715e">### 子线程 等待 主线程</span></code></pre></div>
+<p>java
+CountDownLatch countDownLatch = new CountDownLatch(1);</p>
+</blockquote>
+
+<p>for (int i = 0; i &lt; 3; i++) {
+  new Thread(() -&gt; {
+    Tool.println(Thread.currentThread().getName() + &ldquo; 等待主线程&rdquo;);</p>
+
+<pre><code>try {
+  countDownLatch.await(); // 等待主线程
+} catch (InterruptedException e) {
+  e.printStackTrace();
+}
+
+Tool.println(Thread.currentThread().getName() + &quot; 完成&quot;);
+</code></pre>
+
+<p>}).start();
+}</p>
+
+<p>ThreadUtil.sleep(3, TimeUnit.SECONDS);
+Tool.println(&ldquo;开始干活&rdquo;);
+countDownLatch.countDown();</p>
+
+<pre><code>
+&gt; ```
+&gt; 946 : Thread-0 等待主线程
+&gt; 946 : Thread-2 等待主线程
+&gt; 946 : Thread-1 等待主线程
+&gt; 949 : 开始干活
+&gt; 949 : Thread-0 开始
+&gt; 949 : Thread-2 开始
+&gt; 949 : Thread-1 开始
+&gt; ```
+
+
+
+## 实现原理
+
+</code></pre>
+
+<p>java
+public class CountDownLatch {
+  // 基于 AbstractQueuedSynchronizer 的共享资源逻辑
+  private static final class Sync extends AbstractQueuedSynchronizer {</p>
+
+<pre><code>// 初始 同步化状态，该状态的含义由子类定义
+Sync(int count) {
+  setState(count);
+}
+
+// 基于 AbstractQueuedSynchronizer 的 共享模式
+protected int tryAcquireShared(int acquires) {
+  // 如果 同步化状态 是 0，可以获取资源（执行资格），否则 park
+  return (getState() == 0) ? 1 : -1;
+}
+
+protected boolean tryReleaseShared(int releases) {
+  for (;;) {
+    int c = getState();
+    // 已经是 0 的话，无需处理
+    if (c == 0)
+      return false;
+
+    // ❤ count - 1 
+    int nextc = c - 1;
+    // 重试 + CAS 修改 state 的值
+    if (compareAndSetState(c, nextc))
+      // 直到 count 到 0，才允许释放 release
+      return nextc == 0;
+  }
+}
+</code></pre>
+
+<p>}</p>
+
+<p>&hellip;</p>
+
+<p>// 初始化个数
+  public CountDownLatch(int count) {
+    if (count &lt; 0) throw new IllegalArgumentException(&ldquo;count &lt; 0&rdquo;);
+    this.sync = new Sync(count);
+  }</p>
+
+<p>// 获取共享资源，失败的话 park，通过 tryAcquireShared 的实现来控制行为
+  public void await() throws InterruptedException {
+    sync.acquireSharedInterruptibly(1);
+  }</p>
+
+<p>// 释放资源，通过 tryReleaseShared 的实现来控制行为
+  public void countDown() {
+    sync.releaseShared(1);
+  }</p>
+
+<p>&hellip;<br />
+}
+```</p>
+
+<h2 id="read-more">Read More</h2>
+
+<ul>
+<li>javadoc: <a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/CountDownLatch.html">java.util.concurrent.CountDownLatch</a></li>
+<li><a href="https://www.cnblogs.com/aniao/p/aniao_cdl.html">【JUC源码解析】CountDownLatch</a></li>
+</ul>
+</article>
 
       
 <div class="book-footer justify-between">
@@ -147,6 +290,21 @@ https://github.com/alex-shpak/hugo-book
 
     
   
+
+  <aside class="book-toc level-3 fixed">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#countdownlatch">CountDownLatch</a>
+<ul>
+<li><a href="#如何使用">如何使用</a>
+<ul>
+<li><a href="#主线程-等待-子线程">主线程 等待 子线程</a></li>
+</ul></li>
+<li><a href="#read-more">Read More</a></li>
+</ul></li>
+</ul>
+</nav>
+  </aside>
 
 
 

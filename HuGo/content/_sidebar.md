@@ -13,15 +13,15 @@ headless: true
   - ~~ReentrantLock~~
   - ~~<sup>[8]</sup>StampedLock~~
 - **java.util.concurrent**
-  - [ExecutorService]({{< relref "/docs/java.util.concurrent/ExecutorService.md" >}})
-  - [Future]({{< relref "/docs/java.util.concurrent/Future.md" >}})
-  - [ExecutorCompletionService]({{< relref "/docs/java.util.concurrent/ExecutorCompletionService.md" >}})
-  - [<sup>[7]</sup>ForkJoin]({{< relref "/docs/java.util.concurrent/ForkJoin.md" >}})
-  - [<sup>[8]</sup>CompletableFuture]({{< relref "/docs/java.util.concurrent/CompletableFuture.md" >}})
-  - ~~Semaphore~~
-  - ~~CountDownLatch~~
-  - ~~CyclicBarrier~~
-  - ~~  <sup>[7]</sup> Phaser ~~
+  - [ExecutorService<sup>♨</sup>]({{< relref "/docs/java.util.concurrent/ExecutorService.md" >}})
+  - [Future<sup>➿</sup>]({{< relref "/docs/java.util.concurrent/Future.md" >}})
+  - [ExecutorCompletionService<sup>➿</sup>]({{< relref "/docs/java.util.concurrent/ExecutorCompletionService.md" >}})
+  - [<sup>[7]</sup>ForkJoin<sup>♨</sup>]({{< relref "/docs/java.util.concurrent/ForkJoin.md" >}})
+  - [<sup>[8]</sup>CompletableFuture<sup>➿</sup>]({{< relref "/docs/java.util.concurrent/CompletableFuture.md" >}})
+  - [CountDownLatch <sup>🔒</sup>]({{< relref "/docs/java.util.concurrent/CountDownLatch.md" >}})
+  - [Semaphore<sup>🔒</sup>]({{< relref "/docs/java.util.concurrent/Semaphore.md" >}})
+  - [CyclicBarrier<sup>🔒</sup>]({{< relref "/docs/java.util.concurrent/CyclicBarrier.md" >}})
+  - [<sup>[7]</sup> Phaser<sup>🔒</sup>]({{< relref "/docs/java.util.concurrent/Phaser.md" >}})
 - **java.util.concurrent.atomic**
   - ~~AtomicLong~~
   - ~~<sup>[8]</sup>LongAdder~~

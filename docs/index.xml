@@ -15,7 +15,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/_sidebar/</guid>
-      <description> java.lang  Thread ThreadLocal  sun.misc  Unsafe  java.util.concurrent.locks  LockSupport AbstractQueuedSynchronizer ReentrantLock [8]StampedLock  java.util.concurrent  ExecutorService Future ExecutorCompletionService [7]ForkJoin [8]CompletableFuture Semaphore CountDownLatch CyclicBarrier ~~ [7] Phaser ~~  java.util.concurrent.atomic  AtomicLong [8]LongAdder   </description>
+      <description> java.lang  Thread ThreadLocal  sun.misc  Unsafe  java.util.concurrent.locks  LockSupport AbstractQueuedSynchronizer ReentrantLock [8]StampedLock  java.util.concurrent  ExecutorService♨ Future➿ ExecutorCompletionService➿ [7]ForkJoin♨ [8]CompletableFuture➿ CountDownLatch 🔒 Semaphore🔒 CyclicBarrier🔒 [7] Phaser🔒  java.util.concurrent.atomic  AtomicLong [8]LongAdder   </description>
     </item>
     
     <item>
@@ -75,7 +75,9 @@ final Thread thread = new Thread(() -&amp;gt; System.out.println(System.currentT
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/CountDownLatch/</guid>
-      <description></description>
+      <description>CountDownLatch CountDownLatch 基于 AQS 同步框架，允许一个或多个线程 await 等待，直到指定数量(count) 的操作完成(countDown)
+初始 CountDownLatch 时，会给定 count，调用 await 方法时会阻塞当前线程，直到 count 减小到 0，countDown 会使 count 减 1，该同步器不能被重置。
+如何使用 主线程 等待 子线程 int count = 3; CountDownLatch countDownLatch = new CountDownLatch(count); for (int i = 0; i &amp;lt; 3; i++) { int finalI = i; new Thread(() -&amp;gt; { ThreadUtil.sleep(finalI, TimeUnit.SECONDS); Tool.println(Thread.currentThread().getName() + &amp;#34; 完成&amp;#34;); // count - 1  countDownLatch.countDown(); }).start(); } Tool.println(&amp;#34;等待 &amp;#34; + count + &amp;#34;个 任务完成&amp;#34;); // 阻塞当前线程 countDownLatch.</description>
     </item>
     
     <item>
@@ -84,7 +86,7 @@ final Thread thread = new Thread(() -&amp;gt; System.out.println(System.currentT
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/CyclicBarrier/</guid>
-      <description></description>
+      <description> CyclicBarrier </description>
     </item>
     
     <item>
@@ -180,7 +182,7 @@ http://www.matools.com/file/manual/jdk_api_1.8_google/java/util/concurrent/locks
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/Phaser/</guid>
-      <description></description>
+      <description> Phaser </description>
     </item>
     
     <item>
@@ -189,7 +191,7 @@ http://www.matools.com/file/manual/jdk_api_1.8_google/java/util/concurrent/locks
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/Semaphore/</guid>
-      <description></description>
+      <description> Semaphore </description>
     </item>
     
     <item>

@@ -72,15 +72,15 @@ https://github.com/alex-shpak/hugo-book
 <li><strong>java.util.concurrent</strong>
 
 <ul>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService</a></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future</a></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorCompletionService/">ExecutorCompletionService</a></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoin/"><sup>[7]</sup>ForkJoin</a></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/CompletableFuture/"><sup>[8]</sup>CompletableFuture</a></li>
-<li><del>Semaphore</del></li>
-<li><del>CountDownLatch</del></li>
-<li><del>CyclicBarrier</del></li>
-<li>~~  <sup>[7]</sup> Phaser ~~</li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService<sup>♨</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorCompletionService/">ExecutorCompletionService<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoin/"><sup>[7]</sup>ForkJoin<sup>♨</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CompletableFuture/"><sup>[8]</sup>CompletableFuture<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CountDownLatch/">CountDownLatch <sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Semaphore/">Semaphore<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CyclicBarrier/">CyclicBarrier<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Phaser/"><sup>[7]</sup> Phaser<sup>🔒</sup></a></li>
 </ul></li>
 <li><strong>java.util.concurrent.atomic</strong>
 
@@ -198,7 +198,7 @@ https://github.com/alex-shpak/hugo-book
   <span style="color:#75715e">// waitStatus = CANCELLED | SIGNAL | CONDITION | PROPAGATE
 </span><span style="color:#75715e"></span>  Node(Thread <span style="color:#a6e22e">thread</span>, <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">waitStatus</span>) { <span style="color:#75715e">/* Used by Condition */</span> }
 }</code></pre></div>
-<h2 id="获取独占资源-锁">获取独占资源(锁)</h2>
+<h2 id="获取独占资源-锁">➡ 获取独占资源(锁)</h2>
 
 <h3 id="acquire-lock">❤ acquire (lock) ❤</h3>
 
@@ -230,10 +230,9 @@ https://github.com/alex-shpak/hugo-book
   }
   enq(node);
   <span style="color:#66d9ef">return</span> node;
-}
-
-
-<span style="color:#66d9ef">private</span> <span style="color:#a6e22e">Node</span> enq(<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Node</span> node) {
+}</code></pre></div>
+<h3 id="enq">enq</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">Node</span> enq(<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Node</span> node) {
   <span style="color:#66d9ef">for</span> (;;) {
     Node <span style="color:#a6e22e">t</span> <span style="color:#f92672">=</span> tail;
     <span style="color:#66d9ef">if</span> (t <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span>) { 
@@ -265,6 +264,10 @@ https://github.com/alex-shpak/hugo-book
 </span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> (p <span style="color:#f92672">==</span> head <span style="color:#f92672">&amp;&amp;</span> tryAcquire(arg)) {
         <span style="color:#75715e">// 当前节点设置为 头节点
 </span><span style="color:#75715e"></span>        setHead(node);
+        
+        <span style="color:#75715e">// !!! 共享模式下，不仅 setHead，还 setHeadAndPropagate
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">// !!! 当前节点设置为 头节点， ❤❤❤ 并判断还没有其他可唤醒的资源 ❤❤❤ 
+</span><span style="color:#75715e"></span>        
         p.<span style="color:#a6e22e">next</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>; <span style="color:#75715e">// help GC
 </span><span style="color:#75715e"></span>        failed <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span>;
         <span style="color:#66d9ef">return</span> interrupted;
@@ -290,7 +293,7 @@ https://github.com/alex-shpak/hugo-book
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">shouldParkAfterFailedAcquire</span>(Node <span style="color:#a6e22e">pred</span>, Node <span style="color:#a6e22e">node</span>) {
   <span style="color:#75715e">// 前置节点的状态
 </span><span style="color:#75715e"></span>  <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">ws</span> <span style="color:#f92672">=</span> pred.<span style="color:#a6e22e">waitStatus</span>;
-  <span style="color:#75715e">// 如果前置节点是 SIGNAL（唤醒状态|已经竞争成功），则当前节点就 park，等待被 unpark
+  <span style="color:#75715e">// 如果前置节点是 SIGNAL，则当前节点就 park，可以安心休息了，等待被前置节点 unpark 唤醒
 </span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (ws <span style="color:#f92672">==</span> Node.<span style="color:#a6e22e">SIGNAL</span>)
     <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
   
@@ -303,13 +306,12 @@ https://github.com/alex-shpak/hugo-book
     pred.<span style="color:#a6e22e">next</span> <span style="color:#f92672">=</span> node;
     
   } <span style="color:#66d9ef">else</span> {
-    <span style="color:#75715e">// 把前置节点的 状态标记为 SIGNAL，
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 在下次 acquireQueued 循环中，如果前置节点仍然是 SIGNAL，则 park 当前节点
+    <span style="color:#75715e">// 把前置节点的 状态标记为 SIGNAL，使其结束后通知自己一下
 </span><span style="color:#75715e"></span>    compareAndSetWaitStatus(pred, ws, Node.<span style="color:#a6e22e">SIGNAL</span>);
   }
   <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
 }</code></pre></div>
-<h2 id="释放独占资源-锁">释放独占资源(锁)</h2>
+<h2 id="释放独占资源-锁">➡ 释放独占资源(锁)</h2>
 
 <h3 id="release-unlock">❤ release(unlock) ❤</h3>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">release</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">arg</span>) {
@@ -345,16 +347,22 @@ https://github.com/alex-shpak/hugo-book
 </span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (s <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>)
     LockSupport.<span style="color:#a6e22e">unpark</span>(s.<span style="color:#a6e22e">thread</span>);
 }</code></pre></div>
-<h2 id="获取共享资源-锁">获取共享资源(锁)</h2>
+<h2 id="获取共享资源-锁">➡ 获取共享资源(锁)</h2>
 
 <h3 id="acquireshared">acquireShared</h3>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">acquireShared</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">arg</span>) {
   <span style="color:#75715e">// tryAcquireShared 需要子类实现
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 负数  失败，可能被 park
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">//  0   共享模式下的获取成功，但其后续共享模式下的获取不能成功
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 正数  成功，还有剩余资源，可以执行
 </span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (tryAcquireShared(arg) <span style="color:#f92672">&lt;</span> 0)
-    doAcquireShared(arg);
-}
+    <span style="color:#75715e">// 失败，可能被 park
+</span><span style="color:#75715e"></span>    doAcquireShared(arg);
+}</code></pre></div>
+<h3 id="doacquireshared">doAcquireShared</h3>
 
-<span style="color:#66d9ef">private</span> <span style="color:#a6e22e">void</span> doAcquireShared(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">arg</span>) {
+<p>该过程与 独占模式的 <a href="#acquirequeued">acquireQueued</a> 类似</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">void</span> doAcquireShared(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">arg</span>) {
   <span style="color:#75715e">// 入队操作： 把当前线程 包装成 Node 添加到 队尾，返回包装的 Node 节点
 </span><span style="color:#75715e"></span>  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Node</span> node <span style="color:#f92672">=</span> addWaiter(Node.<span style="color:#a6e22e">SHARED</span>);
   
@@ -366,8 +374,11 @@ https://github.com/alex-shpak/hugo-book
       <span style="color:#75715e">// 当前节点的前驱节点就是 head， 说明该节点是队列中的第一个节点
 </span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> (p <span style="color:#f92672">==</span> head) {
         <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">r</span> <span style="color:#f92672">=</span> tryAcquireShared(arg);
-        <span style="color:#66d9ef">if</span> (r <span style="color:#f92672">&gt;=</span> 0) {
-          setHeadAndPropagate(node, r);
+        <span style="color:#75715e">// tryAcquireShared 的是实现允许获取资源
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> (r <span style="color:#f92672">&gt;=</span> 0) {
+          <span style="color:#75715e">// 把自己变成 head， ❤❤❤ 并判断还没有其他可唤醒的资源 ❤❤❤ 
+</span><span style="color:#75715e"></span>          <span style="color:#75715e">// 这个操作是与 acquireQueued 的主要区别：自己拿到资源后，还会去唤醒后继节点
+</span><span style="color:#75715e"></span>          setHeadAndPropagate(node, r);
           p.<span style="color:#a6e22e">next</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>; <span style="color:#75715e">// help GC
 </span><span style="color:#75715e"></span>          <span style="color:#66d9ef">if</span> (interrupted)
             selfInterrupt();
@@ -375,7 +386,9 @@ https://github.com/alex-shpak/hugo-book
           <span style="color:#66d9ef">return</span>;
         }
       }
-      <span style="color:#66d9ef">if</span> (shouldParkAfterFailedAcquire(p, node) <span style="color:#f92672">&amp;&amp;</span> parkAndCheckInterrupt())
+      
+      <span style="color:#75715e">// 与 acquireQueued 一样，告诉前置节点结束后叫自己一下，然后 park 休息
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> (shouldParkAfterFailedAcquire(p, node) <span style="color:#f92672">&amp;&amp;</span> parkAndCheckInterrupt())
         interrupted <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>;
     }
   } <span style="color:#66d9ef">finally</span> {
@@ -383,36 +396,65 @@ https://github.com/alex-shpak/hugo-book
       cancelAcquire(node);
   }
 }</code></pre></div>
-<h2 id="释放共享资源-锁">释放共享资源(锁)</h2>
+<h3 id="setheadandpropagate">setHeadAndPropagate</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// node = 当前节点
+</span><span style="color:#75715e">// propagate = tryAcquireShared 的返回值
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">void</span> setHeadAndPropagate(Node <span style="color:#a6e22e">node</span>, <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">propagate</span>) {
+  Node <span style="color:#a6e22e">h</span> <span style="color:#f92672">=</span> head;
+  <span style="color:#75715e">// 当前节点设置为头结点
+</span><span style="color:#75715e"></span>  setHead(node);
+
+  <span style="color:#66d9ef">if</span> (
+    propagate <span style="color:#f92672">&gt;</span> 0          <span style="color:#75715e">// tryAcquireShared 实现允许
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">||</span> h <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span>           <span style="color:#75715e">// 上个头结 不存在，说明没有等待队列
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">||</span> h.<span style="color:#a6e22e">waitStatus</span> <span style="color:#f92672">&lt;</span> 0    <span style="color:#75715e">// 上个头结 点没有被取消
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">||</span> (h <span style="color:#f92672">=</span> head) <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span>  <span style="color:#75715e">// 当前头结 不存在，说明没有等待队列
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">||</span> h.<span style="color:#a6e22e">waitStatus</span> <span style="color:#f92672">&lt;</span> 0    <span style="color:#75715e">// 当前头结点没有被取消
+</span><span style="color:#75715e"></span>  ) {
+
+    Node <span style="color:#a6e22e">s</span> <span style="color:#f92672">=</span> node.<span style="color:#a6e22e">next</span>;
+    <span style="color:#66d9ef">if</span> (s <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">||</span> s.<span style="color:#a6e22e">isShared</span>())
+      <span style="color:#75715e">// 如果当前节后的后续节点是 共享模式
+</span><span style="color:#75715e"></span>      <span style="color:#75715e">// ❤❤❤ 按照队列顺序 继续释放后续节点 ❤❤❤
+</span><span style="color:#75715e"></span>      doReleaseShared();
+  }
+}</code></pre></div>
+<h2 id="释放共享资源-锁">➡ 释放共享资源(锁)</h2>
 
 <h3 id="releaseshared">releaseShared</h3>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">releaseShared</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">arg</span>) {
-  <span style="color:#66d9ef">if</span> (tryReleaseShared(arg)) {
+  <span style="color:#75715e">// tryReleaseShared 需要子类实现
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (tryReleaseShared(arg)) {
     doReleaseShared();
     <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
   }
   <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
-}
-
-
-<span style="color:#66d9ef">private</span> <span style="color:#a6e22e">void</span> doReleaseShared() {
+}</code></pre></div>
+<h3 id="doreleaseshared">doReleaseShared</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">void</span> doReleaseShared() {
   <span style="color:#66d9ef">for</span> (;;) {
     Node <span style="color:#a6e22e">h</span> <span style="color:#f92672">=</span> head;
+    
     <span style="color:#66d9ef">if</span> (h <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> h <span style="color:#f92672">!=</span> tail) {
       <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">ws</span> <span style="color:#f92672">=</span> h.<span style="color:#a6e22e">waitStatus</span>;
-      <span style="color:#66d9ef">if</span> (ws <span style="color:#f92672">==</span> Node.<span style="color:#a6e22e">SIGNAL</span>) {
-        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>compareAndSetWaitStatus(h, Node.<span style="color:#a6e22e">SIGNAL</span>, 0))
-          <span style="color:#66d9ef">continue</span>;               <span style="color:#75715e">// loop to recheck cases
+      <span style="color:#75715e">// 头结点被标记为需要唤醒后继节点 @see shouldParkAfterFailedAcquire
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> (ws <span style="color:#f92672">==</span> Node.<span style="color:#a6e22e">SIGNAL</span>) {
+        <span style="color:#75715e">// cas 检查
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>compareAndSetWaitStatus(h, Node.<span style="color:#a6e22e">SIGNAL</span>, 0))
+          <span style="color:#66d9ef">continue</span>; 
+        
+        <span style="color:#75715e">// unpark 唤醒后继节点
 </span><span style="color:#75715e"></span>        unparkSuccessor(h);
-      }
+      }     
       <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> (ws <span style="color:#f92672">==</span> 0 <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">!</span>compareAndSetWaitStatus(h, 0, Node.<span style="color:#a6e22e">PROPAGATE</span>))
-        <span style="color:#66d9ef">continue</span>;                <span style="color:#75715e">// loop on failed CAS
-</span><span style="color:#75715e"></span>    }
-    <span style="color:#66d9ef">if</span> (h <span style="color:#f92672">==</span> head)               <span style="color:#75715e">// loop if head changed
-</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">break</span>;
+        <span style="color:#66d9ef">continue</span>; 
+    }
+    
+    <span style="color:#66d9ef">if</span> (h <span style="color:#f92672">==</span> head)
+      <span style="color:#66d9ef">break</span>;
   }
 }</code></pre></div>
-<h2 id="condition">Condition</h2>
+<h2 id="condition">➡ Condition</h2>
 
 <blockquote>
 <p><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/Condition.html">java.util.concurrent.locks.Condition</a></p>
@@ -523,22 +565,28 @@ https://github.com/alex-shpak/hugo-book
     LockSupport.<span style="color:#a6e22e">unpark</span>(node.<span style="color:#a6e22e">thread</span>);
   <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
 }</code></pre></div>
-<h2 id="需要实现的方法">需要实现的方法</h2>
+<h2 id="使用案例">➡ 使用案例</h2>
 
 <p><code>AQS</code> 使用的 <strong>模版方法设计模式</strong>，本身定义好了资源获取与释放的主要流程，自定义的时候可以实现以下一个主要的方法</p>
 
 <ul>
-<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryAcquire(int)"><code>tryAcquire(int)</code></a></li>
-<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryRelease(int)"><code>tryRelease(int)</code></a></li>
-<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryAcquireShared(int)"><code>tryAcquireShared(int)</code></a></li>
-<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryReleaseShared(int)"><code>tryReleaseShared(int)</code></a></li>
-<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#isHeldExclusively()"><code>isHeldExclusively()</code></a></li>
+<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryAcquire(int)"><code>tryAcquire(int)</code></a> / <a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryRelease(int)"><code>tryRelease(int)</code></a> <strong>独占资源</strong>的获取和释放，如：
+
+<ul>
+<li><a href="../ReentrantLock">ReentrantLock</a></li>
+</ul></li>
+<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryAcquireShared(int)"><code>tryAcquireShared(int)</code></a> / <a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryReleaseShared(int)"><code>tryReleaseShared(int)</code></a> <strong>共享资源</strong>的获取和释放，如：
+
+<ul>
+<li><a href="../../CountDownLatch">CountDownLatch</a></li>
+</ul></li>
+<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#isHeldExclusively()"><code>isHeldExclusively()</code></a> 是否独占方式，<code>Condition.signal</code> 的时候被调用</li>
 </ul>
 
 <h2 id="read-more">Read More</h2>
 
 <ul>
-<li><p>❤❤❤ Inside AbstractQueuedSynchronizer ❤❤❤=</p>
+<li><p>❤❤❤ Inside AbstractQueuedSynchronizer ❤❤❤</p>
 
 <ul>
 <li><a href="https://www.iteye.com/blog/1336409">Inside AbstractQueuedSynchronizer (1)</a></li>
@@ -546,6 +594,8 @@ https://github.com/alex-shpak/hugo-book
 <li><a href="https://www.iteye.com/blog/1337374">Inside AbstractQueuedSynchronizer (3)</a></li>
 <li><a href="https://www.iteye.com/blog/1337539">Inside AbstractQueuedSynchronizer (4)</a></li>
 </ul></li>
+
+<li><p><a href="https://www.cnblogs.com/waterystone/p/4920797.html">Java 并发之 AQS 详解</a></p></li>
 
 <li><p><a href="http://ifeve.com/introduce-abstractqueuedsynchronizer/">AbstractQueuedSynchronizer 的介绍和原理分析</a></p></li>
 
@@ -558,8 +608,8 @@ https://github.com/alex-shpak/hugo-book
   
   <div>
     
-    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/0f2a3ff83effc1c2a2347aeb51e8310c59b1e843" title='Last modified Feb 15, 2020 by 杨凯彬' target="_blank" rel="noopener">
-      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 15, 2020
+    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/060965be6f79cfa2cd1e2806a8abb7c0f6ae91b5" title='Last modified Feb 19, 2020 by 杨凯彬' target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 19, 2020
     </a>
   </div>
   
@@ -586,27 +636,31 @@ https://github.com/alex-shpak/hugo-book
 <ul>
 <li><a href="#继承关系">继承关系</a></li>
 <li><a href="#队列-node-结构">队列 Node 结构</a></li>
-<li><a href="#获取独占资源-锁">获取独占资源(锁)</a>
+<li><a href="#获取独占资源-锁">➡ 获取独占资源(锁)</a>
 <ul>
 <li><a href="#acquire-lock">❤ acquire (lock) ❤</a></li>
 <li><a href="#addwaiter-入队">addWaiter 入队</a></li>
+<li><a href="#enq">enq</a></li>
 <li><a href="#acquirequeued">acquireQueued</a></li>
 <li><a href="#shouldparkafterfailedacquire">shouldParkAfterFailedAcquire</a></li>
 </ul></li>
-<li><a href="#释放独占资源-锁">释放独占资源(锁)</a>
+<li><a href="#释放独占资源-锁">➡ 释放独占资源(锁)</a>
 <ul>
 <li><a href="#release-unlock">❤ release(unlock) ❤</a></li>
 <li><a href="#unparksuccessor">unparkSuccessor</a></li>
 </ul></li>
-<li><a href="#获取共享资源-锁">获取共享资源(锁)</a>
+<li><a href="#获取共享资源-锁">➡ 获取共享资源(锁)</a>
 <ul>
 <li><a href="#acquireshared">acquireShared</a></li>
+<li><a href="#doacquireshared">doAcquireShared</a></li>
+<li><a href="#setheadandpropagate">setHeadAndPropagate</a></li>
 </ul></li>
-<li><a href="#释放共享资源-锁">释放共享资源(锁)</a>
+<li><a href="#释放共享资源-锁">➡ 释放共享资源(锁)</a>
 <ul>
 <li><a href="#releaseshared">releaseShared</a></li>
+<li><a href="#doreleaseshared">doReleaseShared</a></li>
 </ul></li>
-<li><a href="#condition">Condition</a>
+<li><a href="#condition">➡ Condition</a>
 <ul>
 <li><a href="#接口签名">接口签名</a></li>
 <li><a href="#实现">实现</a></li>
@@ -615,7 +669,7 @@ https://github.com/alex-shpak/hugo-book
 <li><a href="#dosignal">doSignal</a></li>
 <li><a href="#transferforsignal">transferForSignal</a></li>
 </ul></li>
-<li><a href="#需要实现的方法">需要实现的方法</a></li>
+<li><a href="#使用案例">➡ 使用案例</a></li>
 <li><a href="#read-more">Read More</a></li>
 </ul></li>
 </ul>

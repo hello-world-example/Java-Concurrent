@@ -75,7 +75,7 @@ static final class Node {
 
 
 
-## 获取独占资源(锁)
+## ➡ 获取独占资源(锁)
 
 ### ❤ acquire (lock) ❤ 
 
@@ -116,8 +116,10 @@ private Node addWaiter(Node mode) {
   enq(node);
   return node;
 }
+```
+### enq
 
-
+``` java
 private Node enq(final Node node) {
   for (;;) {
     Node t = tail;
@@ -154,6 +156,10 @@ final boolean acquireQueued(final Node node, int arg) {
       if (p == head && tryAcquire(arg)) {
         // 当前节点设置为 头节点
         setHead(node);
+        
+        // !!! 共享模式下，不仅 setHead，还 setHeadAndPropagate
+        // !!! 当前节点设置为 头节点， ❤❤❤ 并判断还没有其他可唤醒的资源 ❤❤❤ 
+        
         p.next = null; // help GC
         failed = false;
         return interrupted;
@@ -182,7 +188,7 @@ final boolean acquireQueued(final Node node, int arg) {
 private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
   // 前置节点的状态
   int ws = pred.waitStatus;
-  // 如果前置节点是 SIGNAL（唤醒状态|已经竞争成功），则当前节点就 park，等待被 unpark
+  // 如果前置节点是 SIGNAL，则当前节点就 park，可以安心休息了，等待被前置节点 unpark 唤醒
   if (ws == Node.SIGNAL)
     return true;
   
@@ -195,14 +201,13 @@ private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
     pred.next = node;
     
   } else {
-    // 把前置节点的 状态标记为 SIGNAL，
-    // 在下次 acquireQueued 循环中，如果前置节点仍然是 SIGNAL，则 park 当前节点
+    // 把前置节点的 状态标记为 SIGNAL，使其结束后通知自己一下
     compareAndSetWaitStatus(pred, ws, Node.SIGNAL);
   }
   return false;
 }
 ```
-## 释放独占资源(锁)
+## ➡ 释放独占资源(锁) 
 
 ### ❤ release(unlock) ❤ 
 
@@ -246,17 +251,26 @@ private void unparkSuccessor(Node node) {
 }
 ```
 
-## 获取共享资源(锁)
+## ➡ 获取共享资源(锁)
 
 ### acquireShared
 
 ```java
 public final void acquireShared(int arg) {
   // tryAcquireShared 需要子类实现
+  // 负数  失败，可能被 park
+  //  0   共享模式下的获取成功，但其后续共享模式下的获取不能成功
+  // 正数  成功，还有剩余资源，可以执行
   if (tryAcquireShared(arg) < 0)
+    // 失败，可能被 park
     doAcquireShared(arg);
 }
+```
+### doAcquireShared
 
+该过程与 独占模式的 [acquireQueued](#acquirequeued) 类似
+
+``` java
 private void doAcquireShared(int arg) {
   // 入队操作： 把当前线程 包装成 Node 添加到 队尾，返回包装的 Node 节点
   final Node node = addWaiter(Node.SHARED);
@@ -269,7 +283,10 @@ private void doAcquireShared(int arg) {
       // 当前节点的前驱节点就是 head， 说明该节点是队列中的第一个节点
       if (p == head) {
         int r = tryAcquireShared(arg);
+        // tryAcquireShared 的是实现允许获取资源
         if (r >= 0) {
+          // 把自己变成 head， ❤❤❤ 并判断还没有其他可唤醒的资源 ❤❤❤ 
+          // 这个操作是与 acquireQueued 的主要区别：自己拿到资源后，还会去唤醒后继节点
           setHeadAndPropagate(node, r);
           p.next = null; // help GC
           if (interrupted)
@@ -278,6 +295,8 @@ private void doAcquireShared(int arg) {
           return;
         }
       }
+      
+      // 与 acquireQueued 一样，告诉前置节点结束后叫自己一下，然后 park 休息
       if (shouldParkAfterFailedAcquire(p, node) && parkAndCheckInterrupt())
         interrupted = true;
     }
@@ -288,36 +307,72 @@ private void doAcquireShared(int arg) {
 }
 ```
 
+### setHeadAndPropagate
+
+```java
+// node = 当前节点
+// propagate = tryAcquireShared 的返回值
+private void setHeadAndPropagate(Node node, int propagate) {
+  Node h = head;
+  // 当前节点设置为头结点
+  setHead(node);
+
+  if (
+    propagate > 0          // tryAcquireShared 实现允许
+    || h == null           // 上个头结 不存在，说明没有等待队列
+    || h.waitStatus < 0    // 上个头结 点没有被取消
+    || (h = head) == null  // 当前头结 不存在，说明没有等待队列
+    || h.waitStatus < 0    // 当前头结点没有被取消
+  ) {
+
+    Node s = node.next;
+    if (s == null || s.isShared())
+      // 如果当前节后的后续节点是 共享模式
+      // ❤❤❤ 按照队列顺序 继续释放后续节点 ❤❤❤
+      doReleaseShared();
+  }
+}
+```
 
 
-## 释放共享资源(锁) 
+
+## ➡ 释放共享资源(锁) 
 
 ### releaseShared
 
 ```java
 public final boolean releaseShared(int arg) {
+  // tryReleaseShared 需要子类实现
   if (tryReleaseShared(arg)) {
     doReleaseShared();
     return true;
   }
   return false;
 }
+```
+### doReleaseShared
 
-
+``` java
 private void doReleaseShared() {
   for (;;) {
     Node h = head;
+    
     if (h != null && h != tail) {
       int ws = h.waitStatus;
+      // 头结点被标记为需要唤醒后继节点 @see shouldParkAfterFailedAcquire
       if (ws == Node.SIGNAL) {
+        // cas 检查
         if (!compareAndSetWaitStatus(h, Node.SIGNAL, 0))
-          continue;               // loop to recheck cases
+          continue; 
+        
+        // unpark 唤醒后继节点
         unparkSuccessor(h);
-      }
+      }     
       else if (ws == 0 && !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
-        continue;                // loop on failed CAS
+        continue; 
     }
-    if (h == head)               // loop if head changed
+    
+    if (h == head)
       break;
   }
 }
@@ -325,7 +380,7 @@ private void doReleaseShared() {
 
 
 
-## Condition
+## ➡ Condition
 
 >  [java.util.concurrent.locks.Condition](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/Condition.html)
 
@@ -448,24 +503,26 @@ final boolean transferForSignal(Node node) {
 ```
 
 
-## 需要实现的方法
+## ➡ 使用案例
 
 `AQS` 使用的 **模版方法设计模式**，本身定义好了资源获取与释放的主要流程，自定义的时候可以实现以下一个主要的方法
 
-- [`tryAcquire(int)`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryAcquire(int))
-- [`tryRelease(int)`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryRelease(int))
-- [`tryAcquireShared(int)`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryAcquireShared(int))
-- [`tryReleaseShared(int)`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryReleaseShared(int))
-- [`isHeldExclusively()`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#isHeldExclusively())
+- [`tryAcquire(int)`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryAcquire(int)) / [`tryRelease(int)`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryRelease(int)) **独占资源**的获取和释放，如：
+  - [ReentrantLock](../ReentrantLock)
+- [`tryAcquireShared(int)`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryAcquireShared(int)) / [`tryReleaseShared(int)`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryReleaseShared(int)) **共享资源**的获取和释放，如：
+  - [CountDownLatch](../../CountDownLatch)
+- [`isHeldExclusively()`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#isHeldExclusively()) 是否独占方式，`Condition.signal` 的时候被调用
 
 ## Read More
 
-- ❤❤❤ Inside AbstractQueuedSynchronizer ❤❤❤=
+- ❤❤❤ Inside AbstractQueuedSynchronizer ❤❤❤
 
   - [Inside AbstractQueuedSynchronizer (1)](https://www.iteye.com/blog/1336409)
   - [Inside AbstractQueuedSynchronizer (2)](https://www.iteye.com/blog/1336920)
   - [Inside AbstractQueuedSynchronizer (3)](https://www.iteye.com/blog/1337374)
   - [Inside AbstractQueuedSynchronizer (4)](https://www.iteye.com/blog/1337539)
+
+- [Java 并发之 AQS 详解](https://www.cnblogs.com/waterystone/p/4920797.html)
 
 - [AbstractQueuedSynchronizer 的介绍和原理分析](http://ifeve.com/introduce-abstractqueuedsynchronizer/)
 
