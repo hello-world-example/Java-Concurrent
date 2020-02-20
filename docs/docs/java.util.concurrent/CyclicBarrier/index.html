@@ -66,7 +66,7 @@ https://github.com/alex-shpak/hugo-book
 <ul>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/">LockSupport</a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/AbstractQueuedSynchronizer/">AbstractQueuedSynchronizer</a></li>
-<li><del>ReentrantLock</del></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/ReentrantLock/">ReentrantLock</a></li>
 <li><del><sup>[8]</sup>StampedLock</del></li>
 </ul></li>
 <li><strong>java.util.concurrent</strong>
@@ -80,7 +80,13 @@ https://github.com/alex-shpak/hugo-book
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/CountDownLatch/">CountDownLatch <sup>🔒</sup></a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/Semaphore/">Semaphore<sup>🔒</sup></a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/CyclicBarrier/">CyclicBarrier<sup>🔒</sup></a></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/Phaser/"><sup>[7]</sup> Phaser<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Phaser/"><sup>[7]</sup> <del>Phaser</del><sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/BlockingQueue/">BlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ArrayBlockingQueue/">ArrayBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/LinkedBlockingQueue/">LinkedBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/PriorityBlockingQueue/">PriorityBlockingQueue<sup>📏</sup></a></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/SynchronousQueue/">SynchronousQueue<sup>📏</sup></a></em></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/Exchanger/"> Exchanger<sup>📏</sup></a></em></li>
 </ul></li>
 <li><strong>java.util.concurrent.atomic</strong>
 
@@ -123,6 +129,134 @@ https://github.com/alex-shpak/hugo-book
 <article class="markdown">
 
 <h1 id="cyclicbarrier">CyclicBarrier</h1>
+
+<h2 id="如何使用">如何使用</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">CyclicBarrier <span style="color:#a6e22e">cyclicBarrier</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> CyclicBarrier(3);
+
+<span style="color:#75715e">// 随机休息一段时间
+</span><span style="color:#75715e"></span>Runnable <span style="color:#a6e22e">work</span> <span style="color:#f92672">=</span> () <span style="color:#f92672">-&gt;</span> {
+  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">int</span> sleep <span style="color:#f92672">=</span> Math.<span style="color:#a6e22e">abs</span>(<span style="color:#66d9ef">new</span> Random().<span style="color:#a6e22e">nextInt</span>() <span style="color:#f92672">%</span> 10);
+  Tool.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;sleep &#34;</span> <span style="color:#f92672">+</span> sleep);
+  ThreadUtil.<span style="color:#a6e22e">sleep</span>(sleep, TimeUnit.<span style="color:#a6e22e">SECONDS</span>);
+};
+
+<span style="color:#75715e">// 调用 barrier.await()
+</span><span style="color:#75715e"></span>Consumer<span style="color:#f92672">&lt;</span>CyclicBarrier<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">await</span> <span style="color:#f92672">=</span> (CyclicBarrier <span style="color:#a6e22e">barrier</span>) <span style="color:#f92672">-&gt;</span> {
+  <span style="color:#66d9ef">try</span> {
+    barrier.<span style="color:#a6e22e">await</span>();
+  } <span style="color:#66d9ef">catch</span> (Exception <span style="color:#a6e22e">e</span>) {
+    e.<span style="color:#a6e22e">printStackTrace</span>();
+  }
+};
+
+<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Runnable</span> runnable <span style="color:#f92672">=</span> () <span style="color:#f92672">-&gt;</span> {
+  work.<span style="color:#a6e22e">run</span>();
+  await.<span style="color:#a6e22e">accept</span>(cyclicBarrier); <span style="color:#75715e">// 等待所有线程准备好
+</span><span style="color:#75715e"></span>  Tool.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;A &#34;</span>);
+
+  work.<span style="color:#a6e22e">run</span>();
+  await.<span style="color:#a6e22e">accept</span>(cyclicBarrier); <span style="color:#75715e">// 等待所有线程准备好
+</span><span style="color:#75715e"></span>  Tool.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;B&#34;</span>);
+};
+
+<span style="color:#66d9ef">new</span> Thread(runnable).<span style="color:#a6e22e">start</span>();
+<span style="color:#66d9ef">new</span> Thread(runnable).<span style="color:#a6e22e">start</span>();
+<span style="color:#66d9ef">new</span> Thread(runnable).<span style="color:#a6e22e">start</span>();</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; <span style="color:#ae81ff">566</span> : Thread-2 : sleep <span style="color:#ae81ff">3</span>
+&gt; <span style="color:#ae81ff">566</span> : Thread-1 : sleep <span style="color:#ae81ff">2</span>
+&gt; <span style="color:#ae81ff">566</span> : Thread-0 : sleep <span style="color:#ae81ff">1</span>
+&gt; <span style="color:#ae81ff">569</span> : Thread-2 : ---A--- // <span style="color:#ae81ff">3</span> 秒后同时执行
+&gt; <span style="color:#ae81ff">569</span> : Thread-0 : ---A---
+&gt; <span style="color:#ae81ff">569</span> : Thread-1 : ---A---
+&gt; // 
+&gt; <span style="color:#ae81ff">569</span> : Thread-2 : sleep <span style="color:#ae81ff">6</span>
+&gt; <span style="color:#ae81ff">569</span> : Thread-0 : sleep <span style="color:#ae81ff">6</span>
+&gt; <span style="color:#ae81ff">569</span> : Thread-1 : sleep <span style="color:#ae81ff">5</span>
+&gt; <span style="color:#ae81ff">575</span> : Thread-0 : ---B---  // <span style="color:#ae81ff">6</span> 秒后同时执行
+&gt; <span style="color:#ae81ff">575</span> : Thread-2 : ---B---
+&gt; <span style="color:#ae81ff">575</span> : Thread-1 : ---B---</code></pre></div>
+<h2 id="实现原理">实现原理</h2>
+
+<p><strong>CyclicBarrier 并非直接基于 AQS， 而是基于 ReentrantLock 和 Condition</strong></p>
+
+<ul>
+<li>所有线程的 await 操作 都是 lock() 操作，获取到锁之后，凭证数减1</li>
+<li>如果不到 0 ，就 <code>lock.condition.await</code> ，等待被唤醒</li>
+<li>如果到 0 了，继续执行并 <code>lock.condition.signalAll</code>，唤醒所有等待的线程继续执行</li>
+<li>并重新开始计数</li>
+</ul>
+
+<h3 id="await">await</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">int</span> await() <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span>, BrokenBarrierException {
+  <span style="color:#66d9ef">try</span> {
+    <span style="color:#66d9ef">return</span> dowait(<span style="color:#66d9ef">false</span>, 0L);
+  } <span style="color:#66d9ef">catch</span> (TimeoutException <span style="color:#a6e22e">toe</span>) {
+    <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> Error(toe); <span style="color:#75715e">// cannot happen
+</span><span style="color:#75715e"></span>  }
+}</code></pre></div>
+<h3 id="dowait">dowait</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">int</span> dowait(<span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">timed</span>, <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">nanos</span>)  <span style="color:#66d9ef">throws</span> ... {
+  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">ReentrantLock</span> lock <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">lock</span>;
+  lock.<span style="color:#a6e22e">lock</span>();
+  <span style="color:#66d9ef">try</span> {
+    <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Generation</span> g <span style="color:#f92672">=</span> generation;
+    ...
+
+    <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">index</span> <span style="color:#f92672">=</span> <span style="color:#f92672">--</span>count;
+    <span style="color:#75715e">// ❤❤❤ index 减到 0，从新开始下一次计数 ❤❤❤
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (index <span style="color:#f92672">==</span> 0) {  <span style="color:#75715e">// tripped
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">ranAction</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span>;
+      <span style="color:#66d9ef">try</span> {
+        ...
+        nextGeneration();
+        <span style="color:#66d9ef">return</span> 0;
+      } <span style="color:#66d9ef">finally</span> {
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>ranAction)
+          breakBarrier();
+      }
+    }
+
+    <span style="color:#66d9ef">for</span> (;;) {
+      <span style="color:#66d9ef">try</span> {
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>timed)
+          <span style="color:#75715e">// ❤❤❤ await 释放锁 ❤❤❤
+</span><span style="color:#75715e"></span>          trip.<span style="color:#a6e22e">await</span>();
+        <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> (nanos <span style="color:#f92672">&gt;</span> 0L)
+          <span style="color:#75715e">// ❤❤❤ await 释放锁 ❤❤❤
+</span><span style="color:#75715e"></span>          nanos <span style="color:#f92672">=</span> trip.<span style="color:#a6e22e">awaitNanos</span>(nanos);
+      } <span style="color:#66d9ef">catch</span> (InterruptedException <span style="color:#a6e22e">ie</span>) {
+        ...
+      }
+      ...
+    }
+  } <span style="color:#66d9ef">finally</span> {
+    lock.<span style="color:#a6e22e">unlock</span>();
+  }
+}</code></pre></div>
+<h3 id="breakbarrier">breakBarrier</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">void</span> breakBarrier() {
+  <span style="color:#75715e">// 重置栅栏
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 线程中断后需要 reset(), 否则会抛出 BrokenBarrierException 异常
+</span><span style="color:#75715e"></span>  generation.<span style="color:#a6e22e">broken</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>;
+  <span style="color:#75715e">// 重置计数
+</span><span style="color:#75715e"></span>  count <span style="color:#f92672">=</span> parties;
+  <span style="color:#75715e">// 唤醒所有 持有锁并等待的线程
+</span><span style="color:#75715e"></span>  trip.<span style="color:#a6e22e">signalAll</span>();
+}</code></pre></div>
+<h3 id="nextgeneration">nextGeneration</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">void</span> nextGeneration() {
+  <span style="color:#75715e">// 唤醒所有 持有锁并等待的线程
+</span><span style="color:#75715e"></span>  trip.<span style="color:#a6e22e">signalAll</span>();
+  <span style="color:#75715e">// 重置计数
+</span><span style="color:#75715e"></span>  count <span style="color:#f92672">=</span> parties;
+  <span style="color:#75715e">// generation.broken = false;
+</span><span style="color:#75715e"></span>  generation <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Generation();
+}</code></pre></div>
+<h2 id="read-more">Read More</h2>
+
+<ul>
+<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/CyclicBarrier.html">java.util.concurrent.CyclicBarrier</a></li>
+<li><a href="https://www.cnblogs.com/aniao/p/aniao_cyclicbarrier.html">【JUC源码解析】CyclicBarrier</a></li>
+</ul>
 </article>
 
       
@@ -130,8 +264,8 @@ https://github.com/alex-shpak/hugo-book
   
   <div>
     
-    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/0f2a3ff83effc1c2a2347aeb51e8310c59b1e843" title='Last modified Feb 15, 2020 by 杨凯彬' target="_blank" rel="noopener">
-      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 15, 2020
+    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/bdfad1bf73730f661dd31f4a6725603589f716c6" title='Last modified Feb 19, 2020 by 杨凯彬' target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 19, 2020
     </a>
   </div>
   
@@ -154,7 +288,18 @@ https://github.com/alex-shpak/hugo-book
   <aside class="book-toc level-3 fixed">
     <nav id="TableOfContents">
 <ul>
-<li><a href="#cyclicbarrier">CyclicBarrier</a></li>
+<li><a href="#cyclicbarrier">CyclicBarrier</a>
+<ul>
+<li><a href="#如何使用">如何使用</a></li>
+<li><a href="#实现原理">实现原理</a>
+<ul>
+<li><a href="#await">await</a></li>
+<li><a href="#dowait">dowait</a></li>
+<li><a href="#breakbarrier">breakBarrier</a></li>
+<li><a href="#nextgeneration">nextGeneration</a></li>
+</ul></li>
+<li><a href="#read-more">Read More</a></li>
+</ul></li>
 </ul>
 </nav>
   </aside>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Priority Blocking Queue | Java-Concurrent</title>
+
+
+<link rel="stylesheet" href="/Java-Concurrent/book.min.79de1f7861b0c98f453c0a93bebf3608a280809e417787746c373699639900d7.css">
+
+
+
+
+<link rel="icon" href="/Java-Concurrent/favicon.png" type="image/x-icon">
+
+
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body>
+  <input type="checkbox" style="display: none" id="menu-control" />
+  <main class="flex container">
+
+    <aside class="book-menu fixed">
+      <nav>
+<h2 class="book-brand">
+  <a href="https://hello-world-example.github.io/Java-Concurrent/">Java-Concurrent</a>
+</h2>
+
+
+
+
+
+
+    
+  
+  
+  
+
+  <style>
+  nav ul a[href$="\2fJava-Concurrent\2f docs\2fjava.util.concurrent\2fPriorityBlockingQueue\2f "] {
+      color: #004ed0;
+  }
+  </style>
+
+<ul>
+<li><strong>java.lang</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.lang/Thread/">Thread</a></li>
+<li><a href="/Java-Concurrent/docs/java.lang/ThreadLocal/">ThreadLocal</a></li>
+</ul></li>
+<li><strong>sun.misc</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/sun.misc/Unsafe/">Unsafe</a></li>
+</ul></li>
+<li><strong>java.util.concurrent.locks</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/">LockSupport</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/AbstractQueuedSynchronizer/">AbstractQueuedSynchronizer</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/ReentrantLock/">ReentrantLock</a></li>
+<li><del><sup>[8]</sup>StampedLock</del></li>
+</ul></li>
+<li><strong>java.util.concurrent</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService<sup>♨</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorCompletionService/">ExecutorCompletionService<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoin/"><sup>[7]</sup>ForkJoin<sup>♨</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CompletableFuture/"><sup>[8]</sup>CompletableFuture<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CountDownLatch/">CountDownLatch <sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Semaphore/">Semaphore<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CyclicBarrier/">CyclicBarrier<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Phaser/"><sup>[7]</sup> <del>Phaser</del><sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/BlockingQueue/">BlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ArrayBlockingQueue/">ArrayBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/LinkedBlockingQueue/">LinkedBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/PriorityBlockingQueue/">PriorityBlockingQueue<sup>📏</sup></a></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/SynchronousQueue/">SynchronousQueue<sup>📏</sup></a></em></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/Exchanger/"> Exchanger<sup>📏</sup></a></em></li>
+</ul></li>
+<li><strong>java.util.concurrent.atomic</strong>
+
+<ul>
+<li><del>AtomicLong</del></li>
+<li><del><sup>[8]</sup>LongAdder</del></li>
+</ul></li>
+</ul>
+
+
+
+
+
+
+
+</nav>
+
+
+<script>
+(function() {
+  var menu = document.querySelector("aside.book-menu nav");
+  addEventListener("beforeunload", function(event) {
+    localStorage.setItem("menu.scrollTop", menu.scrollTop);
+  });
+  menu.scrollTop = localStorage.getItem("menu.scrollTop");
+})();
+</script>
+
+    </aside>
+
+    <div class="book-page">
+      <header class="flex align-center justify-between book-header">
+  <label for="menu-control">
+    <img src="/Java-Concurrent/svg/menu.svg" alt="Menu" />
+  </label>
+  <strong>Priority Blocking Queue</strong>
+</header>
+
+      
+<article class="markdown">
+
+<h1 id="priorityblockingqueue">PriorityBlockingQueue</h1>
+
+<ul>
+<li><code>PriorityBlockingQueue</code> 是一个<strong>基于数组</strong> 的 <strong>无界</strong> <strong>优先级</strong>队列</li>
+<li>因为可以放<strong>无限的元素</strong>，所以<strong>会涉及到队列的扩容</strong></li>
+<li>队列元素有优先级基于 <strong>堆排序</strong>，优先级高的会放在前面</li>
+<li>元素的优先级比较需要自定义 <code>Comparator</code> ，或者 元素自身是 <code>Comparable</code> 的，否则会抛出异常
+
+<ul>
+<li><code>java.lang.ClassCastException: xxx.xxx.Xxx cannot be cast to java.lang.Comparable</code></li>
+</ul></li>
+</ul>
+
+<h2 id="实现原理">实现原理</h2>
+
+<h3 id="put">put</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">void</span> put(E <span style="color:#a6e22e">e</span>) {
+  <span style="color:#75715e">// 无界队列， put 不会 阻塞
+</span><span style="color:#75715e"></span>  offer(e); <span style="color:#75715e">// never need to block
+</span><span style="color:#75715e"></span>}</code></pre></div>
+<h3 id="offer">offer</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">boolean</span> offer(E <span style="color:#a6e22e">e</span>) {
+  <span style="color:#66d9ef">if</span> (e <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span>) <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> NullPointerException();
+
+  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">ReentrantLock</span> lock <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">lock</span>;
+  lock.<span style="color:#a6e22e">lock</span>();
+  <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">n</span>, cap;
+  Object[] <span style="color:#a6e22e">array</span>;
+
+  <span style="color:#75715e">// 元素个数 &gt;= 现有队列的长度
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">while</span> ((n <span style="color:#f92672">=</span> size) <span style="color:#f92672">&gt;=</span> (cap <span style="color:#f92672">=</span> (array <span style="color:#f92672">=</span> queue).<span style="color:#a6e22e">length</span>))
+    <span style="color:#75715e">// 扩容 System.arraycopy(array, 0, newArray, 0, oldCap);
+</span><span style="color:#75715e"></span>    tryGrow(array, cap);
+
+  <span style="color:#66d9ef">try</span> {
+    Comparator<span style="color:#f92672">&lt;?</span> <span style="color:#66d9ef">super</span> <span style="color:#a6e22e">E</span><span style="color:#f92672">&gt;</span> cmp <span style="color:#f92672">=</span> comparator;
+    
+    <span style="color:#66d9ef">if</span> (cmp <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span>)
+      <span style="color:#75715e">// 没有自定义比较器，权限大的排前面，排序算法一样
+</span><span style="color:#75715e"></span>      siftUpComparable(n, e, array);
+    <span style="color:#66d9ef">else</span>
+      <span style="color:#75715e">// 使用自定义比较器，权限大的排前面，排序算法一样
+</span><span style="color:#75715e"></span>      siftUpUsingComparator(n, e, array, cmp);
+    
+    size <span style="color:#f92672">=</span> n <span style="color:#f92672">+</span> 1;
+    notEmpty.<span style="color:#a6e22e">signal</span>();
+  } <span style="color:#66d9ef">finally</span> {
+    lock.<span style="color:#a6e22e">unlock</span>();
+  }
+  <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+}</code></pre></div>
+<h3 id="take">take</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">E</span> take() <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span> {
+  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">ReentrantLock</span> lock <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">lock</span>;
+  lock.<span style="color:#a6e22e">lockInterruptibly</span>();
+  E <span style="color:#a6e22e">result</span>;
+  <span style="color:#66d9ef">try</span> {
+    <span style="color:#75715e">// 出队，如果没有数据 await
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">while</span> ( (result <span style="color:#f92672">=</span> dequeue()) <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span>)
+      notEmpty.<span style="color:#a6e22e">await</span>();
+  } <span style="color:#66d9ef">finally</span> {
+    lock.<span style="color:#a6e22e">unlock</span>();
+  }
+  <span style="color:#66d9ef">return</span> result;
+}</code></pre></div>
+<h3 id="dequeue">dequeue</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">E</span> dequeue() {
+  <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">n</span> <span style="color:#f92672">=</span> size <span style="color:#f92672">-</span> 1;
+  <span style="color:#66d9ef">if</span> (n <span style="color:#f92672">&lt;</span> 0)
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span>;
+  <span style="color:#66d9ef">else</span> {
+    Object[] <span style="color:#a6e22e">array</span> <span style="color:#f92672">=</span> queue;
+    <span style="color:#75715e">// 根据堆排序算法，第一个元素，优先级最高
+</span><span style="color:#75715e"></span>    E <span style="color:#a6e22e">result</span> <span style="color:#f92672">=</span> (E) array[0];
+    E <span style="color:#a6e22e">x</span> <span style="color:#f92672">=</span> (E) array[n];
+    array[n] <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>;
+    
+    <span style="color:#75715e">// 调整堆数
+</span><span style="color:#75715e"></span>    Comparator<span style="color:#f92672">&lt;?</span> <span style="color:#66d9ef">super</span> <span style="color:#a6e22e">E</span><span style="color:#f92672">&gt;</span> cmp <span style="color:#f92672">=</span> comparator;
+    <span style="color:#66d9ef">if</span> (cmp <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span>)
+      siftDownComparable(0, x, array, n);
+    <span style="color:#66d9ef">else</span>
+      siftDownUsingComparator(0, x, array, n, cmp);
+    
+    size <span style="color:#f92672">=</span> n;
+    <span style="color:#66d9ef">return</span> result;
+  }
+}</code></pre></div>
+<h2 id="堆排序-todo">堆排序 TODO</h2>
+
+<h3 id="二叉堆">二叉堆</h3>
+
+<ul>
+<li>小顶堆：父结点  &lt;= 子节点；大顶堆：父结点  &gt;= 子节点；</li>
+
+<li><p>每个结点的左子树和右子树都是一个二叉堆</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 小顶堆 逻辑结构</span>
+    <span style="color:#ae81ff">10</span>
+  ↙    ↘
+<span style="color:#ae81ff">15</span>        <span style="color:#ae81ff">56</span>
+↙   ↘     ↙
+<span style="color:#ae81ff">25</span>   <span style="color:#ae81ff">30</span>    <span style="color:#ae81ff">70</span>
+
+<span style="color:#75715e"># 存储结构</span>
+<span style="color:#f92672">[</span><span style="color:#ae81ff">10</span><span style="color:#f92672">][</span><span style="color:#ae81ff">15</span><span style="color:#f92672">][</span><span style="color:#ae81ff">56</span><span style="color:#f92672">][</span><span style="color:#ae81ff">25</span><span style="color:#f92672">][</span><span style="color:#ae81ff">30</span><span style="color:#f92672">][</span><span style="color:#ae81ff">70</span><span style="color:#f92672">]</span>
+__0___1___2___3___4___5</code></pre></div></li>
+
+<li><p>数组的<strong>第一个节点是堆顶</strong></p></li>
+
+<li><p>节点 <code>i</code> 的 <strong>父节点</strong>：<code>(i – 1) / 2</code> | <code>(i - 1) &gt;&gt; 1</code></p></li>
+
+<li><p>节点 <code>i</code> 的 <strong>左节点</strong>：<code>2 * i + 1</code> | <code>i &lt;&lt; 1 + 1</code></p>
+
+<ul>
+<li>第一个节点的左节点 = <code>2*0+1 = 1</code> 即 <code>15</code></li>
+</ul></li>
+
+<li><p>节点 <code>i</code> 的 <strong>右节点</strong>：<code>2 * i + 2</code> | <code>i &lt;&lt; 1 + 2</code></p>
+
+<ul>
+<li>第一个节点的右节点 = <code>2*0+2 = 2</code> 即 <code>56</code>
+
+<br /></li>
+</ul></li>
+</ul>
+
+<h2 id="read-more">Read More</h2>
+
+<ul>
+<li><a href="https://www.cnblogs.com/aniao/p/aniao_pbq.html">【JUC源码解析】PriorityBlockingQueue</a></li>
+</ul>
+</article>
+
+      
+<div class="book-footer justify-end">
+  
+  
+  <div>
+    <a href="https://github.com/hello-world-example/Java-Concurrent/edit/master/HuGo/content/docs/java.util.concurrent/PriorityBlockingQueue.md" target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/edit.svg" alt="Edit" /> Edit this page
+    </a>
+  </div>
+  
+</div>
+
+
+      
+    </div>
+
+    
+  
+
+  <aside class="book-toc level-3 fixed">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#priorityblockingqueue">PriorityBlockingQueue</a>
+<ul>
+<li><a href="#实现原理">实现原理</a>
+<ul>
+<li><a href="#put">put</a></li>
+<li><a href="#offer">offer</a></li>
+<li><a href="#take">take</a></li>
+<li><a href="#dequeue">dequeue</a></li>
+</ul></li>
+<li><a href="#堆排序-todo">堆排序 TODO</a>
+<ul>
+<li><a href="#二叉堆">二叉堆</a></li>
+</ul></li>
+<li><a href="#read-more">Read More</a></li>
+</ul></li>
+</ul>
+</nav>
+  </aside>
+
+
+
+  </main>
+  
+  
+  
+</body>
+
+</html>

@@ -83,7 +83,7 @@ lock 方法的实现，获取资源
 
 ```java
 public final void acquire(int arg) {
-  // 1. tryAcquire 子类自己实现
+  // 1. tryAcquire 子类自己实现，❤❤❤ 在这一步是实现 公平/非公平 竞争的关键，
   // 2. acquireQueued 通行 或者 park 阻塞
   if (!tryAcquire(arg) && acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
     // 如果竞争失败过，标记为被中断
@@ -95,7 +95,7 @@ public final void acquire(int arg) {
 
 ### addWaiter 入队
 
-入队操作： **把当前线程 包装成 Node 添加到 队尾**，返回包装的 Node 节点
+入队操作： **把当前线程 包装成 Node 加入到队尾**，返回包装的 Node 节点
 
 ```java
 private Node addWaiter(Node mode) {
@@ -149,6 +149,7 @@ final boolean acquireQueued(final Node node, int arg) {
   boolean failed = true;
   try {
     boolean interrupted = false;
+    // ❤❤❤ 自旋竞争执行权的主要流程，如果竞争失败 park
     for (;;) {
       final Node p = node.predecessor();
       // 1. 当前节点的前驱节点就是 head， 说明该节点是队列中的第一个节点
@@ -158,7 +159,7 @@ final boolean acquireQueued(final Node node, int arg) {
         setHead(node);
         
         // !!! 共享模式下，不仅 setHead，还 setHeadAndPropagate
-        // !!! 当前节点设置为 头节点， ❤❤❤ 并判断还没有其他可唤醒的资源 ❤❤❤ 
+        // !!! 当前节点设置为 头节点， ❤ 并判断还没有其他可唤醒的资源 ❤
         
         p.next = null; // help GC
         failed = false;
@@ -257,12 +258,12 @@ private void unparkSuccessor(Node node) {
 
 ```java
 public final void acquireShared(int arg) {
-  // tryAcquireShared 需要子类实现
+  // tryAcquireShared 需要子类实现，❤❤❤ 这一步是实现 公平/非公平 竞争的关键
   // 负数  失败，可能被 park
   //  0   共享模式下的获取成功，但其后续共享模式下的获取不能成功
   // 正数  成功，还有剩余资源，可以执行
   if (tryAcquireShared(arg) < 0)
-    // 失败，可能被 park
+    // 失败，入队检查执行权限可能被 park
     doAcquireShared(arg);
 }
 ```
@@ -283,7 +284,7 @@ private void doAcquireShared(int arg) {
       // 当前节点的前驱节点就是 head， 说明该节点是队列中的第一个节点
       if (p == head) {
         int r = tryAcquireShared(arg);
-        // tryAcquireShared 的是实现允许获取资源
+        // tryAcquireShared 的实现允许获取资源
         if (r >= 0) {
           // 把自己变成 head， ❤❤❤ 并判断还没有其他可唤醒的资源 ❤❤❤ 
           // 这个操作是与 acquireQueued 的主要区别：自己拿到资源后，还会去唤醒后继节点
@@ -431,7 +432,7 @@ public final void await() throws InterruptedException {
   int savedState = fullyRelease(node);
   
   int interruptMode = 0;
-  // 如果不在同步队列，park 当前线程
+  // 确认不在同步队列，park 当前线程
   while (!isOnSyncQueue(node)) {
     LockSupport.park(this);
     // 被 unpark/signal 后，判断当前线程有没有被标记为 中断
@@ -458,7 +459,7 @@ public final void await() throws InterruptedException {
 
 ```java
 public final void signal() {
-  // 判断当前线程是否持有锁，[该方法需要子类实现]
+  // 判断当前线程是否独占，[该方法需要子类实现]
   if (!isHeldExclusively())
     throw new IllegalMonitorStateException();
   
@@ -473,10 +474,12 @@ public final void signal() {
 ```java
 private void doSignal(Node first) {
   do {
+    // 如果 没有后继节点，说明 Condition 队列已经空了，清理为原始状态
     if ( (firstWaiter = first.nextWaiter) == null )
       lastWaiter = null;
-    
     first.nextWaiter = null;
+    
+    // 把 condition 队列 的节点转移到  sync 队列
   } while (!transferForSignal(first) && (first = firstWaiter) != null);
 }
 ```
@@ -491,7 +494,7 @@ final boolean transferForSignal(Node node) {
   if (!compareAndSetWaitStatus(node, Node.CONDITION, 0))
     return false;
 
-  // ❤ 请求入队，返回上一个一节
+  // ❤ 入队，返回上一个一节
   Node p = enq(node);
   
   int ws = p.waitStatus;
@@ -508,9 +511,10 @@ final boolean transferForSignal(Node node) {
 `AQS` 使用的 **模版方法设计模式**，本身定义好了资源获取与释放的主要流程，自定义的时候可以实现以下一个主要的方法
 
 - [`tryAcquire(int)`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryAcquire(int)) / [`tryRelease(int)`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryRelease(int)) **独占资源**的获取和释放，如：
-  - [ReentrantLock](../ReentrantLock)
+  - [ReentrantLock](../ReentrantLock)： 子类维护 state ，标示锁的重入次数，**为 0 时竞争锁，不为 0 时阻塞**
 - [`tryAcquireShared(int)`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryAcquireShared(int)) / [`tryReleaseShared(int)`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#tryReleaseShared(int)) **共享资源**的获取和释放，如：
-  - [CountDownLatch](../../CountDownLatch)
+  - [CountDownLatch](../../CountDownLatch)：子类维护 state = count ，标示需要 countDown 的次数，**不为 0 时阻塞**
+  - [Semaphore](../../Semaphore)：子类维护 state = 令牌，**为 0 时阻塞**
 - [`isHeldExclusively()`](https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/AbstractQueuedSynchronizer.html#isHeldExclusively()) 是否独占方式，`Condition.signal` 的时候被调用
 
 ## Read More

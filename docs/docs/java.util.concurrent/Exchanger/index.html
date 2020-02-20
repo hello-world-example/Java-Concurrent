@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Phaser | Java-Concurrent</title>
+<title>Exchanger | Java-Concurrent</title>
 
 
 <link rel="stylesheet" href="/Java-Concurrent/book.min.79de1f7861b0c98f453c0a93bebf3608a280809e417787746c373699639900d7.css">
@@ -44,7 +44,7 @@ https://github.com/alex-shpak/hugo-book
   
 
   <style>
-  nav ul a[href$="\2fJava-Concurrent\2f docs\2fjava.util.concurrent\2fPhaser\2f "] {
+  nav ul a[href$="\2fJava-Concurrent\2f docs\2fjava.util.concurrent\2f Exchanger\2f "] {
       color: #004ed0;
   }
   </style>
@@ -122,28 +122,67 @@ https://github.com/alex-shpak/hugo-book
   <label for="menu-control">
     <img src="/Java-Concurrent/svg/menu.svg" alt="Menu" />
   </label>
-  <strong>Phaser</strong>
+  <strong>Exchanger</strong>
 </header>
 
       
 <article class="markdown">
 
-<h1 id="phaser">Phaser</h1>
+<h1 id="exchanger">Exchanger</h1>
+
+<p><code>Exchanger</code> 跟  <a href="../SynchronousQueue">SynchronousQueue</a> 有点类似，都有点类似于线程间通讯</p>
+
+<ul>
+<li><code>Exchanger</code>  在发送的时候同时能够接收</li>
+<li><code>SynchronousQueue</code> 一个发送一个接收，创建两个 <code>SynchronousQueue</code> 来传递数据好像同样可以达到 <code>Exchanger</code>  的效果</li>
+</ul>
+
+<h2 id="如何使用">如何使用</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Exchanger<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">exchanger</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Exchanger<span style="color:#f92672">&lt;&gt;</span>();
+
+Runnable <span style="color:#a6e22e">runnable</span> <span style="color:#f92672">=</span> () <span style="color:#f92672">-&gt;</span> {
+  <span style="color:#66d9ef">for</span> (; ; ) {
+    <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">int</span> newData <span style="color:#f92672">=</span> Math.<span style="color:#a6e22e">abs</span>(<span style="color:#66d9ef">new</span> Random().<span style="color:#a6e22e">nextInt</span>() <span style="color:#f92672">%</span> 100);
+    Integer <span style="color:#a6e22e">oldData</span> <span style="color:#f92672">=</span> 0;
+    <span style="color:#66d9ef">try</span> {
+      Tool.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;走你 → &#34;</span> <span style="color:#f92672">+</span> newData);
+      oldData <span style="color:#f92672">=</span> exchanger.<span style="color:#a6e22e">exchange</span>(newData);
+      Tool.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;← 收到 &#34;</span> <span style="color:#f92672">+</span> oldData);
+    } <span style="color:#66d9ef">catch</span> (InterruptedException <span style="color:#a6e22e">e</span>) {
+      e.<span style="color:#a6e22e">printStackTrace</span>();
+    }
+
+    ThreadUtil.<span style="color:#a6e22e">sleep</span>(newData <span style="color:#f92672">*</span> 10);
+
+    <span style="color:#66d9ef">if</span> (newData <span style="color:#f92672">&lt;</span> 30 <span style="color:#f92672">||</span> oldData <span style="color:#f92672">&lt;</span> 30) {
+      <span style="color:#66d9ef">break</span>;
+    }
+  }
+};
+
+<span style="color:#66d9ef">new</span> Thread(runnable).<span style="color:#a6e22e">start</span>();
+<span style="color:#66d9ef">new</span> Thread(runnable).<span style="color:#a6e22e">start</span>();</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt;494 : Thread-1 : 给你 → <span style="color:#ae81ff">80</span>
+&gt;494 : Thread-0 : 给你 → <span style="color:#ae81ff">46</span>
+&gt;494 : Thread-1 : ← 收到 <span style="color:#ae81ff">46</span>
+&gt;494 : Thread-0 : ← 收到 <span style="color:#ae81ff">80</span>
+&gt;
+&gt;494 : Thread-0 : 给你 → <span style="color:#ae81ff">43</span>
+&gt;495 : Thread-1 : 给你 → <span style="color:#ae81ff">15</span>
+&gt;495 : Thread-1 : ← 收到 <span style="color:#ae81ff">43</span>
+&gt;495 : Thread-0 : ← 收到 <span style="color:#ae81ff">15</span></code></pre></div>
+<h2 id="read-more">Read More</h2>
+
+<ul>
+<li><a href="https://www.cnblogs.com/aniao/p/aniao_exchanger.html">【JUC源码解析】Exchanger</a></li>
+</ul>
 </article>
 
       
-<div class="book-footer justify-between">
-  
-  <div>
-    
-    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/bdfad1bf73730f661dd31f4a6725603589f716c6" title='Last modified Feb 19, 2020 by 杨凯彬' target="_blank" rel="noopener">
-      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 19, 2020
-    </a>
-  </div>
+<div class="book-footer justify-end">
   
   
   <div>
-    <a href="https://github.com/hello-world-example/Java-Concurrent/edit/master/HuGo/content/docs/java.util.concurrent/Phaser.md" target="_blank" rel="noopener">
+    <a href="https://github.com/hello-world-example/Java-Concurrent/edit/master/HuGo/content/docs/java.util.concurrent/Exchanger.md" target="_blank" rel="noopener">
       <img src="/Java-Concurrent/svg/edit.svg" alt="Edit" /> Edit this page
     </a>
   </div>
@@ -160,7 +199,11 @@ https://github.com/alex-shpak/hugo-book
   <aside class="book-toc level-3 fixed">
     <nav id="TableOfContents">
 <ul>
-<li><a href="#phaser">Phaser</a></li>
+<li><a href="#exchanger">Exchanger</a>
+<ul>
+<li><a href="#如何使用">如何使用</a></li>
+<li><a href="#read-more">Read More</a></li>
+</ul></li>
 </ul>
 </nav>
   </aside>

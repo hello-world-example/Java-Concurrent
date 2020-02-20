@@ -8,7 +8,7 @@ public class Tool {
     }
 
     public static void println(Object obj) {
-        System.out.println(currentSeconds() + " : " + obj);
+        System.out.println(currentSeconds() + " : " + Thread.currentThread().getName() + " : " + obj);
     }
 
 }

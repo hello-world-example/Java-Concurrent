@@ -10,7 +10,7 @@ headless: true
 - **java.util.concurrent.locks**
   - [LockSupport]({{< relref "/docs/java.util.concurrent/locks/LockSupport.md" >}})
   - [AbstractQueuedSynchronizer]({{< relref "/docs/java.util.concurrent/locks/AbstractQueuedSynchronizer.md" >}})
-  - ~~ReentrantLock~~
+  - [ReentrantLock]({{< relref "/docs/java.util.concurrent/locks/ReentrantLock.md" >}})
   - ~~<sup>[8]</sup>StampedLock~~
 - **java.util.concurrent**
   - [ExecutorService<sup>♨</sup>]({{< relref "/docs/java.util.concurrent/ExecutorService.md" >}})
@@ -21,7 +21,13 @@ headless: true
   - [CountDownLatch <sup>🔒</sup>]({{< relref "/docs/java.util.concurrent/CountDownLatch.md" >}})
   - [Semaphore<sup>🔒</sup>]({{< relref "/docs/java.util.concurrent/Semaphore.md" >}})
   - [CyclicBarrier<sup>🔒</sup>]({{< relref "/docs/java.util.concurrent/CyclicBarrier.md" >}})
-  - [<sup>[7]</sup> Phaser<sup>🔒</sup>]({{< relref "/docs/java.util.concurrent/Phaser.md" >}})
+  - [<sup>[7]</sup> ~~Phaser~~<sup>🔒</sup>]({{< relref "/docs/java.util.concurrent/Phaser.md" >}})
+  - [BlockingQueue<sup>📏</sup>]({{< relref "/docs/java.util.concurrent/BlockingQueue.md" >}})
+  - [ArrayBlockingQueue<sup>📏</sup>]({{< relref "/docs/java.util.concurrent/ArrayBlockingQueue.md" >}})
+  - [LinkedBlockingQueue<sup>📏</sup>]({{< relref "/docs/java.util.concurrent/LinkedBlockingQueue.md" >}})
+  - [PriorityBlockingQueue<sup>📏</sup>]({{< relref "/docs/java.util.concurrent/PriorityBlockingQueue.md" >}})
+  - *[SynchronousQueue<sup>📏</sup>]({{< relref "/docs/java.util.concurrent/SynchronousQueue.md" >}})*
+  - *[ Exchanger<sup>📏</sup>]({{< relref "/docs/java.util.concurrent/Exchanger.md" >}})*
 - **java.util.concurrent.atomic**
   - ~~AtomicLong~~
   - ~~<sup>[8]</sup>LongAdder~~

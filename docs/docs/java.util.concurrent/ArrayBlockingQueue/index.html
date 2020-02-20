@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Array Blocking Queue | Java-Concurrent</title>
+
+
+<link rel="stylesheet" href="/Java-Concurrent/book.min.79de1f7861b0c98f453c0a93bebf3608a280809e417787746c373699639900d7.css">
+
+
+
+
+<link rel="icon" href="/Java-Concurrent/favicon.png" type="image/x-icon">
+
+
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body>
+  <input type="checkbox" style="display: none" id="menu-control" />
+  <main class="flex container">
+
+    <aside class="book-menu fixed">
+      <nav>
+<h2 class="book-brand">
+  <a href="https://hello-world-example.github.io/Java-Concurrent/">Java-Concurrent</a>
+</h2>
+
+
+
+
+
+
+    
+  
+  
+  
+
+  <style>
+  nav ul a[href$="\2fJava-Concurrent\2f docs\2fjava.util.concurrent\2f ArrayBlockingQueue\2f "] {
+      color: #004ed0;
+  }
+  </style>
+
+<ul>
+<li><strong>java.lang</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.lang/Thread/">Thread</a></li>
+<li><a href="/Java-Concurrent/docs/java.lang/ThreadLocal/">ThreadLocal</a></li>
+</ul></li>
+<li><strong>sun.misc</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/sun.misc/Unsafe/">Unsafe</a></li>
+</ul></li>
+<li><strong>java.util.concurrent.locks</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/">LockSupport</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/AbstractQueuedSynchronizer/">AbstractQueuedSynchronizer</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/ReentrantLock/">ReentrantLock</a></li>
+<li><del><sup>[8]</sup>StampedLock</del></li>
+</ul></li>
+<li><strong>java.util.concurrent</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService<sup>♨</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorCompletionService/">ExecutorCompletionService<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoin/"><sup>[7]</sup>ForkJoin<sup>♨</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CompletableFuture/"><sup>[8]</sup>CompletableFuture<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CountDownLatch/">CountDownLatch <sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Semaphore/">Semaphore<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CyclicBarrier/">CyclicBarrier<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Phaser/"><sup>[7]</sup> <del>Phaser</del><sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/BlockingQueue/">BlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ArrayBlockingQueue/">ArrayBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/LinkedBlockingQueue/">LinkedBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/PriorityBlockingQueue/">PriorityBlockingQueue<sup>📏</sup></a></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/SynchronousQueue/">SynchronousQueue<sup>📏</sup></a></em></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/Exchanger/"> Exchanger<sup>📏</sup></a></em></li>
+</ul></li>
+<li><strong>java.util.concurrent.atomic</strong>
+
+<ul>
+<li><del>AtomicLong</del></li>
+<li><del><sup>[8]</sup>LongAdder</del></li>
+</ul></li>
+</ul>
+
+
+
+
+
+
+
+</nav>
+
+
+<script>
+(function() {
+  var menu = document.querySelector("aside.book-menu nav");
+  addEventListener("beforeunload", function(event) {
+    localStorage.setItem("menu.scrollTop", menu.scrollTop);
+  });
+  menu.scrollTop = localStorage.getItem("menu.scrollTop");
+})();
+</script>
+
+    </aside>
+
+    <div class="book-page">
+      <header class="flex align-center justify-between book-header">
+  <label for="menu-control">
+    <img src="/Java-Concurrent/svg/menu.svg" alt="Menu" />
+  </label>
+  <strong>Array Blocking Queue</strong>
+</header>
+
+      
+<article class="markdown">
+
+<h1 id="arrayblockingqueue">ArrayBlockingQueue</h1>
+
+<blockquote>
+<p>@see <a href="../BlockingQueue">BlockingQueue</a></p>
+</blockquote>
+
+<ul>
+<li>ArrayBlockingQueue 是 <a href="../BlockingQueue">BlockingQueue</a> 的一个基于数组的实现</li>
+<li>基于 <code>ReentrantLock</code> 的 <code>await</code> 和 <code>signal</code> 通知机制 实现阻塞</li>
+<li>操作队列数据的时候 并<strong>不像 ArrayList 一样，需要扩容 或 数据平移带来的性能损耗</strong></li>
+<li>仅仅依靠平移 <code>takeIndex</code> / <code>putIndex</code> 读写坐标</li>
+</ul>
+
+<h2 id="实现原理">实现原理</h2>
+
+<h3 id="arrayblockingqueue-构造">ArrayBlockingQueue 构造</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 队列元素
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Object</span>[] items;
+
+<span style="color:#75715e">// 读取坐标
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">takeIndex</span>;
+
+<span style="color:#75715e">// 写入坐标
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">putIndex</span>;
+
+<span style="color:#75715e">// 当前数据个数
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">count</span>;
+
+<span style="color:#66d9ef">public</span> <span style="color:#a6e22e">ArrayBlockingQueue</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">capacity</span>, <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">fair</span>) {
+  <span style="color:#66d9ef">if</span> (capacity <span style="color:#f92672">&lt;=</span> 0)
+    <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> IllegalArgumentException();
+
+  <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">items</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Object[capacity];
+
+  <span style="color:#75715e">// 基于 Lock 的 await 和 signal 通知机制
+</span><span style="color:#75715e"></span>  lock <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ReentrantLock(fair);
+
+  <span style="color:#75715e">// 实例化了两个 Condition 队列，用于区分 获取 和 添加
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 唤醒的时候可以唤醒 指定类型的操作
+</span><span style="color:#75715e"></span>  notEmpty <span style="color:#f92672">=</span> lock.<span style="color:#a6e22e">newCondition</span>();
+  notFull <span style="color:#f92672">=</span>  lock.<span style="color:#a6e22e">newCondition</span>();
+}</code></pre></div>
+<h3 id="put-阻塞">put 阻塞</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">void</span> put(E <span style="color:#a6e22e">e</span>) <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span> {
+  checkNotNull(e);
+  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">ReentrantLock</span> lock <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">lock</span>;
+  <span style="color:#75715e">// 如果当前线程未被中断，则获取锁
+</span><span style="color:#75715e"></span>  lock.<span style="color:#a6e22e">lockInterruptibly</span>();
+  <span style="color:#66d9ef">try</span> {
+    <span style="color:#75715e">// 队列已经满了
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">while</span> (count <span style="color:#f92672">==</span> items.<span style="color:#a6e22e">length</span>)
+      <span style="color:#75715e">// park 阻塞
+</span><span style="color:#75715e"></span>      notFull.<span style="color:#a6e22e">await</span>();
+    
+    <span style="color:#75715e">// 入队
+</span><span style="color:#75715e"></span>    enqueue(e);
+  } <span style="color:#66d9ef">finally</span> {
+    lock.<span style="color:#a6e22e">unlock</span>();
+  }
+}</code></pre></div>
+<h3 id="enqueue-入队">enqueue 入队</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">void</span> enqueue(E <span style="color:#a6e22e">x</span>) {
+  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Object</span>[] items <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">items</span>;
+  items[putIndex] <span style="color:#f92672">=</span> x;
+  <span style="color:#75715e">// 如果下标已经移动到最后一位，从头开始。 
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 相当于下标循环移动，只要 takeIndex 不超过 putIndex，就不会出现同一个数据读两次的情况
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// putIndex 也不会超过 takeIndex，因为入队之前做了 count 队里数据个数的判断
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (<span style="color:#f92672">++</span>putIndex <span style="color:#f92672">==</span> items.<span style="color:#a6e22e">length</span>)
+    putIndex <span style="color:#f92672">=</span> 0;
+  
+  <span style="color:#75715e">// 统计队列元素个数
+</span><span style="color:#75715e"></span>  count<span style="color:#f92672">++</span>;
+
+  <span style="color:#75715e">// 如果有数据了，唤醒因为 take 没有数据 阻塞的线程
+</span><span style="color:#75715e"></span>  notEmpty.<span style="color:#a6e22e">signal</span>();
+}</code></pre></div>
+<h3 id="take-阻塞">take 阻塞</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">E</span> take() <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span> {
+  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">ReentrantLock</span> lock <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">lock</span>;
+  <span style="color:#75715e">// 如果当前线程未被中断，则获取锁
+</span><span style="color:#75715e"></span>  lock.<span style="color:#a6e22e">lockInterruptibly</span>();
+  <span style="color:#66d9ef">try</span> {
+    <span style="color:#75715e">// 队列空了
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">while</span> (count <span style="color:#f92672">==</span> 0)
+      <span style="color:#75715e">// park 阻塞
+</span><span style="color:#75715e"></span>      notEmpty.<span style="color:#a6e22e">await</span>();
+    
+    <span style="color:#75715e">// 出队
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span> dequeue();
+  } <span style="color:#66d9ef">finally</span> {
+    lock.<span style="color:#a6e22e">unlock</span>();
+  }
+}</code></pre></div>
+<h3 id="dequeue-出队">dequeue 出队</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">E</span> dequeue() {
+  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Object</span>[] items <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">items</span>;
+  E <span style="color:#a6e22e">x</span> <span style="color:#f92672">=</span> (E) items[takeIndex];
+  <span style="color:#75715e">// 当前坐标数据制空
+</span><span style="color:#75715e"></span>  items[takeIndex] <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>;
+  <span style="color:#75715e">// 如果下标已经移动到最后一位，从头开始。 
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 相当于下标循环移动，只要 takeIndex 不超过 putIndex，就不会出现同一个数据读两次的情况
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// putIndex 也不会超过 takeIndex，因为入队之前做了 count 队里数据个数的判断
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (<span style="color:#f92672">++</span>takeIndex <span style="color:#f92672">==</span> items.<span style="color:#a6e22e">length</span>)
+    takeIndex <span style="color:#f92672">=</span> 0;
+	<span style="color:#75715e">// 统计队列元素个数
+</span><span style="color:#75715e"></span>  count<span style="color:#f92672">--</span>;
+  
+  <span style="color:#75715e">// 迭代器操作
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (itrs <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>)
+    itrs.<span style="color:#a6e22e">elementDequeued</span>();
+  
+  <span style="color:#75715e">// 如果数据减少了，唤醒因为队列满了 put 阻塞的线程
+</span><span style="color:#75715e"></span>  notFull.<span style="color:#a6e22e">signal</span>();
+  <span style="color:#66d9ef">return</span> x;
+}</code></pre></div>
+<h3 id="其它操作">其它操作</h3>
+
+<ul>
+<li><code>offer</code> / <code>poll</code> ： 同样加锁， 只是到达队列的边界条件时<strong>不 <code>await</code></strong>，而是直接<strong>返回特殊值</strong></li>
+<li><code>add</code> / <code>remove</code> ： 内部调用 <code>offer</code> / <code>poll</code> ，<strong>根据其返回值判断是否抛出异常</strong></li>
+<li><code>offer(time)</code> / <code>poll(time)</code> ：<strong>几乎与 <code>put</code> / <code>take</code> 一样</strong>，只是 <strong>调用 await 的有时间参数的方式</strong></li>
+</ul>
+</article>
+
+      
+<div class="book-footer justify-end">
+  
+  
+  <div>
+    <a href="https://github.com/hello-world-example/Java-Concurrent/edit/master/HuGo/content/docs/java.util.concurrent/ArrayBlockingQueue.md" target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/edit.svg" alt="Edit" /> Edit this page
+    </a>
+  </div>
+  
+</div>
+
+
+      
+    </div>
+
+    
+  
+
+  <aside class="book-toc level-3 fixed">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#arrayblockingqueue">ArrayBlockingQueue</a>
+<ul>
+<li><a href="#实现原理">实现原理</a>
+<ul>
+<li><a href="#arrayblockingqueue-构造">ArrayBlockingQueue 构造</a></li>
+<li><a href="#put-阻塞">put 阻塞</a></li>
+<li><a href="#enqueue-入队">enqueue 入队</a></li>
+<li><a href="#take-阻塞">take 阻塞</a></li>
+<li><a href="#dequeue-出队">dequeue 出队</a></li>
+<li><a href="#其它操作">其它操作</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+  </aside>
+
+
+
+  </main>
+  
+  
+  
+</body>
+
+</html>

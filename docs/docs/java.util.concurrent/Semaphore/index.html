@@ -66,7 +66,7 @@ https://github.com/alex-shpak/hugo-book
 <ul>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/">LockSupport</a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/AbstractQueuedSynchronizer/">AbstractQueuedSynchronizer</a></li>
-<li><del>ReentrantLock</del></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/ReentrantLock/">ReentrantLock</a></li>
 <li><del><sup>[8]</sup>StampedLock</del></li>
 </ul></li>
 <li><strong>java.util.concurrent</strong>
@@ -80,7 +80,13 @@ https://github.com/alex-shpak/hugo-book
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/CountDownLatch/">CountDownLatch <sup>🔒</sup></a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/Semaphore/">Semaphore<sup>🔒</sup></a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/CyclicBarrier/">CyclicBarrier<sup>🔒</sup></a></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/Phaser/"><sup>[7]</sup> Phaser<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Phaser/"><sup>[7]</sup> <del>Phaser</del><sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/BlockingQueue/">BlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ArrayBlockingQueue/">ArrayBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/LinkedBlockingQueue/">LinkedBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/PriorityBlockingQueue/">PriorityBlockingQueue<sup>📏</sup></a></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/SynchronousQueue/">SynchronousQueue<sup>📏</sup></a></em></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/Exchanger/"> Exchanger<sup>📏</sup></a></em></li>
 </ul></li>
 <li><strong>java.util.concurrent.atomic</strong>
 
@@ -123,6 +129,140 @@ https://github.com/alex-shpak/hugo-book
 <article class="markdown">
 
 <h1 id="semaphore">Semaphore</h1>
+
+<p><code>Semaphore</code>维护了一个 信号量许可集，通过 <code>acquire</code> 消耗信号量，<code>release</code> 增加信号量，如果  <code>acquire</code>  获取信号量的时候 信号量集合中没有，就 <code>park</code> 阻塞等到。</p>
+
+<h2 id="如何使用">如何使用</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">permits</span> <span style="color:#f92672">=</span> 10;
+<span style="color:#75715e">// 刚开始没有许可
+</span><span style="color:#75715e"></span>Semaphore <span style="color:#a6e22e">semaphore</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Semaphore(0);
+
+<span style="color:#66d9ef">new</span> Thread(() <span style="color:#f92672">-&gt;</span> {
+  <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">=</span> 0; i <span style="color:#f92672">&lt;</span> permits; i<span style="color:#f92672">++</span>) {
+    ThreadUtil.<span style="color:#a6e22e">sleep</span>(1, TimeUnit.<span style="color:#a6e22e">SECONDS</span>);
+    <span style="color:#75715e">// 偶数释放 1个，奇数释放 2个
+</span><span style="color:#75715e"></span>    semaphore.<span style="color:#a6e22e">release</span>(i <span style="color:#f92672">%</span> 2 <span style="color:#f92672">+</span> 1);
+  }
+}).<span style="color:#a6e22e">start</span>();
+
+<span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">=</span> 0; i <span style="color:#f92672">&lt;</span> permits; i<span style="color:#f92672">++</span>) {
+  semaphore.<span style="color:#a6e22e">acquire</span>();
+  <span style="color:#75715e">// 获取许可后执行
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">new</span> Thread(() <span style="color:#f92672">-&gt;</span> Tool.<span style="color:#a6e22e">println</span>(Thread.<span style="color:#a6e22e">currentThread</span>().<span style="color:#a6e22e">getName</span>() <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;通过&#34;</span>)).<span style="color:#a6e22e">start</span>();
+}</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; <span style="color:#ae81ff">468</span> : Thread-1通过
+&gt; <span style="color:#ae81ff">469</span> : Thread-2通过
+&gt; <span style="color:#ae81ff">469</span> : Thread-3通过
+&gt; <span style="color:#ae81ff">470</span> : Thread-4通过
+&gt; <span style="color:#ae81ff">471</span> : Thread-5通过
+&gt; <span style="color:#ae81ff">471</span> : Thread-6通过
+&gt; <span style="color:#ae81ff">472</span> : Thread-7通过
+&gt; <span style="color:#ae81ff">473</span> : Thread-8通过
+&gt; <span style="color:#ae81ff">473</span> : Thread-9通过
+&gt; <span style="color:#ae81ff">474</span> : Thread-10通过</code></pre></div>
+<h2 id="实现原理">实现原理</h2>
+
+<p>Semaphore <strong>支持公平和非公平两种竞争方式</strong>，默认是非公平的。</p>
+
+<h3 id="sync-基类">Sync 基类</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">abstract</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Sync</span> <span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">AbstractQueuedSynchronizer</span> {
+  <span style="color:#75715e">// 初始化信号量
+</span><span style="color:#75715e"></span>  Sync(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">permits</span>) { setState(permits);  }
+  <span style="color:#75715e">// 获取信号量
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">int</span> getPermits() {  <span style="color:#66d9ef">return</span> getState();  }
+
+  <span style="color:#75715e">// 释放可用的信号量
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">protected</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">tryReleaseShared</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">releases</span>) {
+    <span style="color:#66d9ef">for</span> (;;) {
+      <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">current</span> <span style="color:#f92672">=</span> getState();
+      <span style="color:#75715e">// 当前信号量的基础上，加上新释放的信号量
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">next</span> <span style="color:#f92672">=</span> current <span style="color:#f92672">+</span> releases;
+      <span style="color:#75715e">// CAS 设置
+</span><span style="color:#75715e"></span>      ...
+    }
+  }
+  
+  <span style="color:#75715e">// 非公平 tryAcquireShared 
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 返回 剩余信号量，如果还有信号量，则可以执行
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">int</span> nonfairTryAcquireShared(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">acquires</span>) {
+    <span style="color:#66d9ef">for</span> (;;) {
+      <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">available</span> <span style="color:#f92672">=</span> getState();
+      <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">remaining</span> <span style="color:#f92672">=</span> available <span style="color:#f92672">-</span> acquires;
+      <span style="color:#66d9ef">if</span> (remaining <span style="color:#f92672">&lt;</span> 0 <span style="color:#f92672">||</span> compareAndSetState(available, remaining))
+        <span style="color:#75715e">// 剩余信号量
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> remaining;
+    }
+  }
+
+...
+  
+}</code></pre></div>
+<h3 id="nonfairsync-非公平">NonfairSync 非公平</h3>
+
+<p>只要有信号量就可以尝试执行</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">static</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">NonfairSync</span> <span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Sync</span> {
+  <span style="color:#75715e">// 初始化信号量
+</span><span style="color:#75715e"></span>  NonfairSync(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">permits</span>) { <span style="color:#66d9ef">super</span>(permits);  }
+
+  <span style="color:#75715e">// 返回 剩余信号量，如果还有信号量，直接执行
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// AQS 申请资源的时候，默认是非公平模式，先尝试竞争，再加入队列
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">protected</span> <span style="color:#a6e22e">int</span> tryAcquireShared(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">acquires</span>) {
+    <span style="color:#66d9ef">return</span> nonfairTryAcquireShared(acquires);
+  }
+}</code></pre></div>
+<h3 id="fairsync-公平">FairSync 公平</h3>
+
+<p>先判断是否有排队，有排队就不参与竞争，入队等待机会</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">static</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FairSync</span> <span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Sync</span> {
+
+  FairSync(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">permits</span>) {
+    <span style="color:#66d9ef">super</span>(permits);
+  }
+
+  <span style="color:#66d9ef">protected</span> <span style="color:#a6e22e">int</span> tryAcquireShared(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">acquires</span>) {
+    <span style="color:#66d9ef">for</span> (;;) {
+      <span style="color:#75715e">// 如果同步队列有排队现象，申请资源失败
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> (hasQueuedPredecessors())
+        <span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span>1;
+      
+      <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">available</span> <span style="color:#f92672">=</span> getState();
+      <span style="color:#75715e">// 申请指定的资源
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">remaining</span> <span style="color:#f92672">=</span> available <span style="color:#f92672">-</span> acquires;
+      <span style="color:#66d9ef">if</span> (remaining <span style="color:#f92672">&lt;</span> 0 <span style="color:#f92672">||</span> compareAndSetState(available, remaining))
+        <span style="color:#66d9ef">return</span> remaining;
+    }
+  }
+}</code></pre></div>
+<h4 id="hasqueuedpredecessors">hasQueuedPredecessors</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 队列中的第一个线程不是当前线程 &amp;&amp; 当前队列中有线程
+</span><span style="color:#75715e">// getFirstQueuedThread() != Thread.currentThread() &amp;&amp; hasQueuedThreads()
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">// 
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">hasQueuedPredecessors</span>() {
+  Node <span style="color:#a6e22e">t</span> <span style="color:#f92672">=</span> tail;
+  Node <span style="color:#a6e22e">h</span> <span style="color:#f92672">=</span> head;
+  Node <span style="color:#a6e22e">s</span>;
+  
+  <span style="color:#66d9ef">return</span> h <span style="color:#f92672">!=</span> t <span style="color:#75715e">// 当前队列中有线程 == hasQueuedThreads()
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 队列中的第一个线程不是当前线程
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">&amp;&amp;</span> ((s <span style="color:#f92672">=</span> h.<span style="color:#a6e22e">next</span>) <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">||</span> s.<span style="color:#a6e22e">thread</span> <span style="color:#f92672">!=</span> Thread.<span style="color:#a6e22e">currentThread</span>());
+}</code></pre></div>
+<h2 id="小结">小结</h2>
+
+<ul>
+<li>公平与非公平的实现，取决自 <code>tryAcquireXxx</code>  如何实现
+
+<ul>
+<li><strong>公平</strong>：如果有排队就入队</li>
+<li><strong>非公平</strong>：不管是否排队先执行</li>
+</ul></li>
+</ul>
+
+<h2 id="read-more">Read More</h2>
+
+<ul>
+<li>javadoc: <a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/Semaphore.html">java.util.concurrent.Semaphore</a></li>
+<li><a href="https://www.cnblogs.com/aniao/p/aniao_semaphore.html">【JUC源码解析】Semaphore</a></li>
+</ul>
 </article>
 
       
@@ -130,8 +270,8 @@ https://github.com/alex-shpak/hugo-book
   
   <div>
     
-    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/0f2a3ff83effc1c2a2347aeb51e8310c59b1e843" title='Last modified Feb 15, 2020 by 杨凯彬' target="_blank" rel="noopener">
-      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 15, 2020
+    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/bdfad1bf73730f661dd31f4a6725603589f716c6" title='Last modified Feb 19, 2020 by 杨凯彬' target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 19, 2020
     </a>
   </div>
   
@@ -154,7 +294,21 @@ https://github.com/alex-shpak/hugo-book
   <aside class="book-toc level-3 fixed">
     <nav id="TableOfContents">
 <ul>
-<li><a href="#semaphore">Semaphore</a></li>
+<li><a href="#semaphore">Semaphore</a>
+<ul>
+<li><a href="#如何使用">如何使用</a></li>
+<li><a href="#实现原理">实现原理</a>
+<ul>
+<li><a href="#sync-基类">Sync 基类</a></li>
+<li><a href="#nonfairsync-非公平">NonfairSync 非公平</a></li>
+<li><a href="#fairsync-公平">FairSync 公平</a>
+<ul>
+<li><a href="#hasqueuedpredecessors">hasQueuedPredecessors</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#小结">小结</a></li>
+<li><a href="#read-more">Read More</a></li>
+</ul></li>
 </ul>
 </nav>
   </aside>

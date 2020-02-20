@@ -15,7 +15,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/_sidebar/</guid>
-      <description> java.lang  Thread ThreadLocal  sun.misc  Unsafe  java.util.concurrent.locks  LockSupport AbstractQueuedSynchronizer ReentrantLock [8]StampedLock  java.util.concurrent  ExecutorService♨ Future➿ ExecutorCompletionService➿ [7]ForkJoin♨ [8]CompletableFuture➿ CountDownLatch 🔒 Semaphore🔒 CyclicBarrier🔒 [7] Phaser🔒  java.util.concurrent.atomic  AtomicLong [8]LongAdder   </description>
+      <description> java.lang  Thread ThreadLocal  sun.misc  Unsafe  java.util.concurrent.locks  LockSupport AbstractQueuedSynchronizer ReentrantLock [8]StampedLock  java.util.concurrent  ExecutorService♨ Future➿ ExecutorCompletionService➿ [7]ForkJoin♨ [8]CompletableFuture➿ CountDownLatch 🔒 Semaphore🔒 CyclicBarrier🔒 [7] Phaser🔒 BlockingQueue📏 ArrayBlockingQueue📏 LinkedBlockingQueue📏 PriorityBlockingQueue📏 SynchronousQueue📏 Exchanger📏  java.util.concurrent.atomic  AtomicLong [8]LongAdder   </description>
     </item>
     
     <item>
@@ -41,6 +41,16 @@ final Thread thread = new Thread(() -&amp;gt; System.out.println(System.currentT
     
     <item>
       <title></title>
+      <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/ArrayBlockingQueue/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/ArrayBlockingQueue/</guid>
+      <description>ArrayBlockingQueue  @see BlockingQueue
+  ArrayBlockingQueue 是 BlockingQueue 的一个基于数组的实现 基于 ReentrantLock 的 await 和 signal 通知机制 实现阻塞 操作队列数据的时候 并不像 ArrayList 一样，需要扩容 或 数据平移带来的性能损耗 仅仅依靠平移 takeIndex / putIndex 读写坐标  实现原理 ArrayBlockingQueue 构造 // 队列元素 final Object[] items; // 读取坐标 int takeIndex; // 写入坐标 int putIndex; // 当前数据个数 int count; public ArrayBlockingQueue(int capacity, boolean fair) { if (capacity &amp;lt;= 0) throw new IllegalArgumentException(); this.items = new Object[capacity]; // 基于 Lock 的 await 和 signal 通知机制  lock = new ReentrantLock(fair); // 实例化了两个 Condition 队列，用于区分 获取 和 添加  // 唤醒的时候可以唤醒 指定类型的操作  notEmpty = lock.</description>
+    </item>
+    
+    <item>
+      <title></title>
       <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/atomic/AtomicLong/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
@@ -55,6 +65,18 @@ final Thread thread = new Thread(() -&amp;gt; System.out.println(System.currentT
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/atomic/LongAdder/</guid>
       <description></description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/BlockingQueue/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/BlockingQueue/</guid>
+      <description> BlockingQueue BlockingQueue 不接受 null ，试图 add、put 或 offer 一个 null 元素时，会抛出 NullPointerException，null 被用作指示 poll 操作失败的警戒值。
+BlockingQueue 四种形的操作
+ 在操作可以成功前，无限期地阻塞当前线程 抛出一个异常 返回一个特殊值（null 或 false，具体取决于操作） 阻塞指定的时间      阻塞 抛出异常 特殊值 超时     插入 put add(e) IllegalArgumentException offer(e) offer(e,time,unit)   移除 take remove NoSuchElementException poll() poll(time, unit)   检查
+获取但不移除 - element NoSuchElementException peek -    阻塞队列的实现  ArrayBlockingQueue 基于数组的 阻塞队列 LinkedBlockingQueue 基于链表的 阻塞对联 SynchronousQueue 没有长度 的阻塞队列 DelayQueue 延时队列 PriorityBlockingQueue 有权重的 阻塞队列  </description>
     </item>
     
     <item>
@@ -86,7 +108,17 @@ final Thread thread = new Thread(() -&amp;gt; System.out.println(System.currentT
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/CyclicBarrier/</guid>
-      <description> CyclicBarrier </description>
+      <description>CyclicBarrier 如何使用 CyclicBarrier cyclicBarrier = new CyclicBarrier(3); // 随机休息一段时间 Runnable work = () -&amp;gt; { final int sleep = Math.abs(new Random().nextInt() % 10); Tool.println(&amp;#34;sleep &amp;#34; + sleep); ThreadUtil.sleep(sleep, TimeUnit.SECONDS); }; // 调用 barrier.await() Consumer&amp;lt;CyclicBarrier&amp;gt; await = (CyclicBarrier barrier) -&amp;gt; { try { barrier.await(); } catch (Exception e) { e.printStackTrace(); } }; final Runnable runnable = () -&amp;gt; { work.run(); await.accept(cyclicBarrier); // 等待所有线程准备好  Tool.println(&amp;#34;A &amp;#34;); work.run(); await.accept(cyclicBarrier); // 等待所有线程准备好  Tool.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/Exchanger/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/Exchanger/</guid>
+      <description>Exchanger Exchanger 跟 SynchronousQueue 有点类似，都有点类似于线程间通讯
+ Exchanger 在发送的时候同时能够接收 SynchronousQueue 一个发送一个接收，创建两个 SynchronousQueue 来传递数据好像同样可以达到 Exchanger 的效果  如何使用 Exchanger&amp;lt;Integer&amp;gt; exchanger = new Exchanger&amp;lt;&amp;gt;(); Runnable runnable = () -&amp;gt; { for (; ; ) { final int newData = Math.abs(new Random().nextInt() % 100); Integer oldData = 0; try { Tool.println(&amp;#34;走你 → &amp;#34; + newData); oldData = exchanger.exchange(newData); Tool.println(&amp;#34;← 收到 &amp;#34; + oldData); } catch (InterruptedException e) { e.printStackTrace(); } ThreadUtil.sleep(newData * 10); if (newData &amp;lt; 30 || oldData &amp;lt; 30) { break; } } }; new Thread(runnable).</description>
     </item>
     
     <item>
@@ -134,6 +166,16 @@ public interface Future&amp;lt;V&amp;gt; { // 等待任务结束，获取结果 
     
     <item>
       <title></title>
+      <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/LinkedBlockingQueue/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/LinkedBlockingQueue/</guid>
+      <description> LinkedBlockingQueue  @see ArrayBlockingQueue
+  LinkedBlockingQueue 是 BlockingQueue 的一个基于链表的实现 基于 ReentrantLock 的 await 和 signal 通知机制 实现阻塞，一个区别是  LinkedBlockingQueue 的增删操作分辨使用 两个锁，增删互不影响 ArrayBlockingQueue 使用一个锁，增删的时候有竞态条件  阻塞原理几乎与 ArrayBlockingQueue 一样，主要关注边界条件 入队和出队时的操作一个链表节点的增删，一个是读写下标的平移  </description>
+    </item>
+    
+    <item>
+      <title></title>
       <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/locks/AbstractQueuedSynchronizer/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
@@ -161,7 +203,7 @@ static final class Node { // 共享模式  static final Node SHARED = new Node()
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/locks/ReentrantLock/</guid>
-      <description></description>
+      <description>ReentrantLock 实现原理 Sync // 加锁 和 释放的过程，都是都 对 state(重入次数) 的维护 abstract static class Sync extends AbstractQueuedSynchronizer { abstract void lock(); // 非公平锁的实现  final boolean nonfairTryAcquire(int acquires) { final Thread current = Thread.currentThread(); int c = getState(); //【抢占锁】 为 0 时说明没有线程持有锁，  if (c == 0) { // CAS 自旋竞争  if (compareAndSetState(0, acquires)) { // 成功后，独占线程设置为自己  setExclusiveOwnerThread(current); return true; } } // 【重入锁】不为 0 时判断独占线程是否自己， 是的话重入  else if (current == getExclusiveOwnerThread()) { // 重入次数 + 1  int nextc = c + acquires; if (nextc &amp;lt; 0) // overflow  throw new Error(&amp;#34;Maximum lock count exceeded&amp;#34;); setState(nextc); return true; } // 竞争失败，排队  return false; } protected final boolean tryRelease(int releases) { // 减少重入次数  int c = getState() - releases; if (Thread.</description>
     </item>
     
     <item>
@@ -187,11 +229,32 @@ http://www.matools.com/file/manual/jdk_api_1.8_google/java/util/concurrent/locks
     
     <item>
       <title></title>
+      <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/PriorityBlockingQueue/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/PriorityBlockingQueue/</guid>
+      <description>PriorityBlockingQueue  PriorityBlockingQueue 是一个基于数组 的 无界 优先级队列 因为可以放无限的元素，所以会涉及到队列的扩容 队列元素有优先级基于 堆排序，优先级高的会放在前面 元素的优先级比较需要自定义 Comparator ，或者 元素自身是 Comparable 的，否则会抛出异常  java.lang.ClassCastException: xxx.xxx.Xxx cannot be cast to java.lang.Comparable   实现原理 put public void put(E e) { // 无界队列， put 不会 阻塞  offer(e); // never need to block } offer public boolean offer(E e) { if (e == null) throw new NullPointerException(); final ReentrantLock lock = this.lock; lock.lock(); int n, cap; Object[] array; // 元素个数 &amp;gt;= 现有队列的长度  while ((n = size) &amp;gt;= (cap = (array = queue).</description>
+    </item>
+    
+    <item>
+      <title></title>
       <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/Semaphore/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/Semaphore/</guid>
-      <description> Semaphore </description>
+      <description>Semaphore Semaphore维护了一个 信号量许可集，通过 acquire 消耗信号量，release 增加信号量，如果 acquire 获取信号量的时候 信号量集合中没有，就 park 阻塞等到。
+如何使用 int permits = 10; // 刚开始没有许可 Semaphore semaphore = new Semaphore(0); new Thread(() -&amp;gt; { for (int i = 0; i &amp;lt; permits; i++) { ThreadUtil.sleep(1, TimeUnit.SECONDS); // 偶数释放 1个，奇数释放 2个  semaphore.release(i % 2 + 1); } }).start(); for (int i = 0; i &amp;lt; permits; i++) { semaphore.acquire(); // 获取许可后执行  new Thread(() -&amp;gt; Tool.println(Thread.currentThread().getName() + &amp;#34;通过&amp;#34;)).</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/SynchronousQueue/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://hello-world-example.github.io/Java-Concurrent/docs/java.util.concurrent/SynchronousQueue/</guid>
+      <description>SynchronousQueue SynchronousQueue 是一个 没有长度 的阻塞队列，全程无锁，全部基于 CAS
+每个插入操作必须等待另一个线程的对应移除操作，即 put 操作会阻塞，直到其他线程 take。适用场景：
+ 针对一个数据变化的通知 生产一个数据，消费一个数据 &amp;hellip;  如何使用 SynchronousQueue&amp;lt;Integer&amp;gt; sync = new SynchronousQueue&amp;lt;&amp;gt;(); final int[] someData = new int[1]; Consumer&amp;lt;Integer&amp;gt; changeIt = (newData) -&amp;gt; someData[0] = newData; Supplier&amp;lt;Integer&amp;gt; getChange = () -&amp;gt; someData[0]; //////////////////////////////// new Thread(() -&amp;gt; { for (; ; ) { final int newData = Math.abs(new Random().nextInt() % 100); changeIt.accept(newData); try { Tool.println(&amp;#34;我变了 &amp;#34; + newData); // 这里会 park，直到 sync.</description>
     </item>
     
     <item>

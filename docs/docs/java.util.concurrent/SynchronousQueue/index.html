@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synchronous Queue | Java-Concurrent</title>
+
+
+<link rel="stylesheet" href="/Java-Concurrent/book.min.79de1f7861b0c98f453c0a93bebf3608a280809e417787746c373699639900d7.css">
+
+
+
+
+<link rel="icon" href="/Java-Concurrent/favicon.png" type="image/x-icon">
+
+
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body>
+  <input type="checkbox" style="display: none" id="menu-control" />
+  <main class="flex container">
+
+    <aside class="book-menu fixed">
+      <nav>
+<h2 class="book-brand">
+  <a href="https://hello-world-example.github.io/Java-Concurrent/">Java-Concurrent</a>
+</h2>
+
+
+
+
+
+
+    
+  
+  
+  
+
+  <style>
+  nav ul a[href$="\2fJava-Concurrent\2f docs\2fjava.util.concurrent\2fSynchronousQueue\2f "] {
+      color: #004ed0;
+  }
+  </style>
+
+<ul>
+<li><strong>java.lang</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.lang/Thread/">Thread</a></li>
+<li><a href="/Java-Concurrent/docs/java.lang/ThreadLocal/">ThreadLocal</a></li>
+</ul></li>
+<li><strong>sun.misc</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/sun.misc/Unsafe/">Unsafe</a></li>
+</ul></li>
+<li><strong>java.util.concurrent.locks</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/">LockSupport</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/AbstractQueuedSynchronizer/">AbstractQueuedSynchronizer</a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/ReentrantLock/">ReentrantLock</a></li>
+<li><del><sup>[8]</sup>StampedLock</del></li>
+</ul></li>
+<li><strong>java.util.concurrent</strong>
+
+<ul>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorService/">ExecutorService<sup>♨</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Future/">Future<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ExecutorCompletionService/">ExecutorCompletionService<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ForkJoin/"><sup>[7]</sup>ForkJoin<sup>♨</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CompletableFuture/"><sup>[8]</sup>CompletableFuture<sup>➿</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CountDownLatch/">CountDownLatch <sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Semaphore/">Semaphore<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/CyclicBarrier/">CyclicBarrier<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Phaser/"><sup>[7]</sup> <del>Phaser</del><sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/BlockingQueue/">BlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ArrayBlockingQueue/">ArrayBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/LinkedBlockingQueue/">LinkedBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/PriorityBlockingQueue/">PriorityBlockingQueue<sup>📏</sup></a></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/SynchronousQueue/">SynchronousQueue<sup>📏</sup></a></em></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/Exchanger/"> Exchanger<sup>📏</sup></a></em></li>
+</ul></li>
+<li><strong>java.util.concurrent.atomic</strong>
+
+<ul>
+<li><del>AtomicLong</del></li>
+<li><del><sup>[8]</sup>LongAdder</del></li>
+</ul></li>
+</ul>
+
+
+
+
+
+
+
+</nav>
+
+
+<script>
+(function() {
+  var menu = document.querySelector("aside.book-menu nav");
+  addEventListener("beforeunload", function(event) {
+    localStorage.setItem("menu.scrollTop", menu.scrollTop);
+  });
+  menu.scrollTop = localStorage.getItem("menu.scrollTop");
+})();
+</script>
+
+    </aside>
+
+    <div class="book-page">
+      <header class="flex align-center justify-between book-header">
+  <label for="menu-control">
+    <img src="/Java-Concurrent/svg/menu.svg" alt="Menu" />
+  </label>
+  <strong>Synchronous Queue</strong>
+</header>
+
+      
+<article class="markdown">
+
+<h1 id="synchronousqueue">SynchronousQueue</h1>
+
+<p><code>SynchronousQueue</code> 是一个 <strong>没有长度</strong> 的阻塞队列，<strong>全程无锁，全部基于 CAS</strong></p>
+
+<p>每个插入操作必须等待另一个线程的对应移除操作，即 <code>put</code> 操作会阻塞，直到其他线程 <code>take</code>。适用场景：</p>
+
+<ul>
+<li>针对<strong>一个数据变化的通知</strong></li>
+<li>生产一个数据，消费一个数据</li>
+<li>&hellip;</li>
+</ul>
+
+<h2 id="如何使用">如何使用</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">SynchronousQueue<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">sync</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> SynchronousQueue<span style="color:#f92672">&lt;&gt;</span>();
+
+<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">int</span>[] someData <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">int</span>[1];
+Consumer<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">changeIt</span> <span style="color:#f92672">=</span> (newData) <span style="color:#f92672">-&gt;</span> someData[0] <span style="color:#f92672">=</span> newData;
+Supplier<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">getChange</span> <span style="color:#f92672">=</span> () <span style="color:#f92672">-&gt;</span> someData[0];
+
+<span style="color:#75715e">////////////////////////////////
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">new</span> Thread(() <span style="color:#f92672">-&gt;</span> {
+  <span style="color:#66d9ef">for</span> (; ; ) {
+    <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">int</span> newData <span style="color:#f92672">=</span> Math.<span style="color:#a6e22e">abs</span>(<span style="color:#66d9ef">new</span> Random().<span style="color:#a6e22e">nextInt</span>() <span style="color:#f92672">%</span> 100);
+    changeIt.<span style="color:#a6e22e">accept</span>(newData);
+    
+    <span style="color:#66d9ef">try</span> {
+      Tool.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;我变了 &#34;</span> <span style="color:#f92672">+</span> newData);
+      <span style="color:#75715e">// 这里会 park，直到 sync.take
+</span><span style="color:#75715e"></span>      sync.<span style="color:#a6e22e">put</span>(newData);
+      ThreadUtil.<span style="color:#a6e22e">sleep</span>(newData <span style="color:#f92672">*</span> 100 <span style="color:#f92672">/</span> 2);
+    } <span style="color:#66d9ef">catch</span> (InterruptedException <span style="color:#a6e22e">e</span>) { ... }
+
+    <span style="color:#75715e">// 结束条件
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (newData <span style="color:#f92672">&lt;</span> 30) { <span style="color:#66d9ef">break</span>; }
+  }
+}).<span style="color:#a6e22e">start</span>();
+
+<span style="color:#75715e">////////////////////////////////
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">new</span> Thread(() <span style="color:#f92672">-&gt;</span> {
+  <span style="color:#66d9ef">for</span> (; ; ) {
+    <span style="color:#66d9ef">try</span> {
+      
+      <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Integer</span> data <span style="color:#f92672">=</span> sync.<span style="color:#a6e22e">take</span>();
+      Tool.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;知道了 &#34;</span> <span style="color:#f92672">+</span> getChange.<span style="color:#a6e22e">get</span>());
+      <span style="color:#75715e">// 结束条件
+</span><span style="color:#75715e"></span>    	<span style="color:#66d9ef">if</span> (newData <span style="color:#f92672">&lt;</span> 30) { <span style="color:#66d9ef">break</span>; }
+    } <span style="color:#66d9ef">catch</span> (InterruptedException <span style="color:#a6e22e">e</span>) { ... }
+  }
+}).<span style="color:#a6e22e">start</span>();</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; <span style="color:#ae81ff">549</span> : Thread-0 : 我变了 <span style="color:#ae81ff">64</span>
+&gt; <span style="color:#ae81ff">549</span> : Thread-1 : 知道了 <span style="color:#ae81ff">64</span>
+&gt; <span style="color:#ae81ff">553</span> : Thread-0 : 我变了 <span style="color:#ae81ff">14</span>
+&gt; <span style="color:#ae81ff">553</span> : Thread-1 : 知道了 <span style="color:#ae81ff">14</span></code></pre></div>
+<h2 id="read-more">Read More</h2>
+
+<ul>
+<li><a href="https://www.cnblogs.com/aniao/p/aniao_sq.html">【JUC源码解析】SynchronousQueue</a></li>
+</ul>
+</article>
+
+      
+<div class="book-footer justify-end">
+  
+  
+  <div>
+    <a href="https://github.com/hello-world-example/Java-Concurrent/edit/master/HuGo/content/docs/java.util.concurrent/SynchronousQueue.md" target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/edit.svg" alt="Edit" /> Edit this page
+    </a>
+  </div>
+  
+</div>
+
+
+      
+    </div>
+
+    
+  
+
+  <aside class="book-toc level-3 fixed">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#synchronousqueue">SynchronousQueue</a>
+<ul>
+<li><a href="#如何使用">如何使用</a></li>
+<li><a href="#read-more">Read More</a></li>
+</ul></li>
+</ul>
+</nav>
+  </aside>
+
+
+
+  </main>
+  
+  
+  
+</body>
+
+</html>

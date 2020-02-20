@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Atomic Long | Java-Concurrent</title>
+<title>Blocking Queue | Java-Concurrent</title>
 
 
 <link rel="stylesheet" href="/Java-Concurrent/book.min.79de1f7861b0c98f453c0a93bebf3608a280809e417787746c373699639900d7.css">
@@ -44,7 +44,7 @@ https://github.com/alex-shpak/hugo-book
   
 
   <style>
-  nav ul a[href$="\2fJava-Concurrent\2f docs\2fjava.util.concurrent\2f atomic\2f AtomicLong\2f "] {
+  nav ul a[href$="\2fJava-Concurrent\2f docs\2fjava.util.concurrent\2f BlockingQueue\2f "] {
       color: #004ed0;
   }
   </style>
@@ -122,25 +122,80 @@ https://github.com/alex-shpak/hugo-book
   <label for="menu-control">
     <img src="/Java-Concurrent/svg/menu.svg" alt="Menu" />
   </label>
-  <strong>Atomic Long</strong>
+  <strong>Blocking Queue</strong>
 </header>
 
       
-<article class="markdown"></article>
+<article class="markdown">
+
+<h1 id="blockingqueue">BlockingQueue</h1>
+
+<p><code>BlockingQueue</code> 不接受 <code>null</code> ，试图 <code>add</code>、<code>put</code> 或 <code>offer</code> 一个 <code>null</code> 元素时，会抛出 <code>NullPointerException</code>，<strong><code>null</code> 被用作指示 <code>poll</code> 操作失败的警戒值</strong>。</p>
+
+<p>BlockingQueue 四种形的操作</p>
+
+<ul>
+<li>在操作可以成功前，无限期地阻塞当前线程</li>
+<li>抛出一个异常</li>
+<li>返回一个特殊值（<code>null</code> 或 <code>false</code>，具体取决于操作）</li>
+<li>阻塞指定的时间</li>
+</ul>
+
+<table>
+<thead>
+<tr>
+<th align="center"></th>
+<th align="center">阻塞</th>
+<th align="center">抛出异常</th>
+<th align="center">特殊值</th>
+<th align="center">超时</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td align="center">插入</td>
+<td align="center"><code>put</code></td>
+<td align="center"><code>add(e)</code> <code>IllegalArgumentException</code></td>
+<td align="center"><code>offer(e)</code></td>
+<td align="center"><code>offer(e,time,unit)</code></td>
+</tr>
+
+<tr>
+<td align="center">移除</td>
+<td align="center"><code>take</code></td>
+<td align="center"><code>remove</code>  <code>NoSuchElementException</code></td>
+<td align="center"><code>poll()</code></td>
+<td align="center"><code>poll(time, unit)</code></td>
+</tr>
+
+<tr>
+<td align="center">检查<br />获取但不移除</td>
+<td align="center">-</td>
+<td align="center"><code>element</code>  <br />  <code>NoSuchElementException</code></td>
+<td align="center"><code>peek</code></td>
+<td align="center">-</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="阻塞队列的实现">阻塞队列的实现</h2>
+
+<ul>
+<li><a href="../ArrayBlockingQueue">ArrayBlockingQueue</a> 基于<strong>数组</strong>的 阻塞队列</li>
+<li><a href="../LinkedBlockingQueue">LinkedBlockingQueue</a> 基于<strong>链表</strong>的 阻塞对联</li>
+<li><a href="../SynchronousQueue">SynchronousQueue</a> <strong>没有长度</strong> 的阻塞队列</li>
+<li><a href="../DelayQueue">DelayQueue</a> <strong>延时</strong>队列</li>
+<li><a href="../PriorityBlockingQueue">PriorityBlockingQueue</a> 有<strong>权重</strong>的 阻塞队列</li>
+</ul>
+</article>
 
       
-<div class="book-footer justify-between">
-  
-  <div>
-    
-    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/0f2a3ff83effc1c2a2347aeb51e8310c59b1e843" title='Last modified Feb 15, 2020 by 杨凯彬' target="_blank" rel="noopener">
-      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 15, 2020
-    </a>
-  </div>
+<div class="book-footer justify-end">
   
   
   <div>
-    <a href="https://github.com/hello-world-example/Java-Concurrent/edit/master/HuGo/content/docs/java.util.concurrent/atomic/AtomicLong.md" target="_blank" rel="noopener">
+    <a href="https://github.com/hello-world-example/Java-Concurrent/edit/master/HuGo/content/docs/java.util.concurrent/BlockingQueue.md" target="_blank" rel="noopener">
       <img src="/Java-Concurrent/svg/edit.svg" alt="Edit" /> Edit this page
     </a>
   </div>
@@ -153,6 +208,17 @@ https://github.com/alex-shpak/hugo-book
 
     
   
+
+  <aside class="book-toc level-3 fixed">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#blockingqueue">BlockingQueue</a>
+<ul>
+<li><a href="#阻塞队列的实现">阻塞队列的实现</a></li>
+</ul></li>
+</ul>
+</nav>
+  </aside>
 
 
 

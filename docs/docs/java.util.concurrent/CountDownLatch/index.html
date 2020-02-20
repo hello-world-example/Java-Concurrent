@@ -66,7 +66,7 @@ https://github.com/alex-shpak/hugo-book
 <ul>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/">LockSupport</a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/AbstractQueuedSynchronizer/">AbstractQueuedSynchronizer</a></li>
-<li><del>ReentrantLock</del></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/ReentrantLock/">ReentrantLock</a></li>
 <li><del><sup>[8]</sup>StampedLock</del></li>
 </ul></li>
 <li><strong>java.util.concurrent</strong>
@@ -80,7 +80,13 @@ https://github.com/alex-shpak/hugo-book
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/CountDownLatch/">CountDownLatch <sup>🔒</sup></a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/Semaphore/">Semaphore<sup>🔒</sup></a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/CyclicBarrier/">CyclicBarrier<sup>🔒</sup></a></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/Phaser/"><sup>[7]</sup> Phaser<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Phaser/"><sup>[7]</sup> <del>Phaser</del><sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/BlockingQueue/">BlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ArrayBlockingQueue/">ArrayBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/LinkedBlockingQueue/">LinkedBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/PriorityBlockingQueue/">PriorityBlockingQueue<sup>📏</sup></a></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/SynchronousQueue/">SynchronousQueue<sup>📏</sup></a></em></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/Exchanger/"> Exchanger<sup>📏</sup></a></em></li>
 </ul></li>
 <li><strong>java.util.concurrent.atomic</strong>
 
@@ -149,113 +155,151 @@ CountDownLatch <span style="color:#a6e22e">countDownLatch</span> <span style="co
 Tool.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;等待 &#34;</span> <span style="color:#f92672">+</span> count <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;个 任务完成&#34;</span>);
 <span style="color:#75715e">// 阻塞当前线程
 </span><span style="color:#75715e"></span>countDownLatch.<span style="color:#a6e22e">await</span>();
-Tool.<span style="color:#a6e22e">println</span>(count <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;个 任务都已完成!! &#34;</span>);</code></pre></div>
-<blockquote>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; <span style="color:#ae81ff">564</span> : 等待 3个 任务完成
-&gt; <span style="color:#ae81ff">564</span> : Thread-0 完成
-&gt; <span style="color:#ae81ff">565</span> : Thread-1 完成
-&gt; <span style="color:#ae81ff">566</span> : Thread-2 完成
-&gt; <span style="color:#ae81ff">566</span> : 3个 任务都已完成!! 
-&gt; <span style="color:#e6db74">```</span>
+Tool.<span style="color:#a6e22e">println</span>(count <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;个 任务都已完成!! &#34;</span>);</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-markdown" data-lang="markdown"><span style="color:#66d9ef">&gt; </span><span style="font-style:italic">564 : 等待 3个 任务完成
+</span><span style="font-style:italic"></span><span style="color:#66d9ef">&gt; </span><span style="font-style:italic">564 : Thread-0 完成
+</span><span style="font-style:italic"></span><span style="color:#66d9ef">&gt; </span><span style="font-style:italic">565 : Thread-1 完成
+</span><span style="font-style:italic"></span><span style="color:#66d9ef">&gt; </span><span style="font-style:italic">566 : Thread-2 完成
+</span><span style="font-style:italic"></span>&gt; 566 : 3个 任务都已完成!! </code></pre></div>
+<h3 id="子线程-等待-主线程">子线程 等待 主线程</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">CountDownLatch <span style="color:#a6e22e">countDownLatch</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> CountDownLatch(1);
 
-<span style="color:#75715e">### 子线程 等待 主线程</span></code></pre></div>
-<p>java
-CountDownLatch countDownLatch = new CountDownLatch(1);</p>
-</blockquote>
+<span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">=</span> 0; i <span style="color:#f92672">&lt;</span> 3; i<span style="color:#f92672">++</span>) {
+  <span style="color:#66d9ef">new</span> Thread(() <span style="color:#f92672">-&gt;</span> {
+    Tool.<span style="color:#a6e22e">println</span>(Thread.<span style="color:#a6e22e">currentThread</span>().<span style="color:#a6e22e">getName</span>() <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; 等待主线程&#34;</span>);
 
-<p>for (int i = 0; i &lt; 3; i++) {
-  new Thread(() -&gt; {
-    Tool.println(Thread.currentThread().getName() + &ldquo; 等待主线程&rdquo;);</p>
+    <span style="color:#66d9ef">try</span> {
+      countDownLatch.<span style="color:#a6e22e">await</span>(); <span style="color:#75715e">// 等待主线程
+</span><span style="color:#75715e"></span>    } <span style="color:#66d9ef">catch</span> (InterruptedException <span style="color:#a6e22e">e</span>) {
+      e.<span style="color:#a6e22e">printStackTrace</span>();
+    }
 
-<pre><code>try {
-  countDownLatch.await(); // 等待主线程
-} catch (InterruptedException e) {
-  e.printStackTrace();
+    Tool.<span style="color:#a6e22e">println</span>(Thread.<span style="color:#a6e22e">currentThread</span>().<span style="color:#a6e22e">getName</span>() <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; 完成&#34;</span>);
+  }).<span style="color:#a6e22e">start</span>();
 }
 
-Tool.println(Thread.currentThread().getName() + &quot; 完成&quot;);
-</code></pre>
+ThreadUtil.<span style="color:#a6e22e">sleep</span>(3, TimeUnit.<span style="color:#a6e22e">SECONDS</span>);
+Tool.<span style="color:#a6e22e">println</span>(<span style="color:#e6db74">&#34;开始干活&#34;</span>);
+countDownLatch.<span style="color:#a6e22e">countDown</span>();</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-markdown" data-lang="markdown"><span style="color:#66d9ef">&gt; </span><span style="font-style:italic">946 : Thread-0 等待主线程
+</span><span style="font-style:italic"></span><span style="color:#66d9ef">&gt; </span><span style="font-style:italic">946 : Thread-2 等待主线程
+</span><span style="font-style:italic"></span><span style="color:#66d9ef">&gt; </span><span style="font-style:italic">946 : Thread-1 等待主线程
+</span><span style="font-style:italic"></span><span style="color:#66d9ef">&gt; </span><span style="font-style:italic">949 : 开始干活
+</span><span style="font-style:italic"></span><span style="color:#66d9ef">&gt; </span><span style="font-style:italic">949 : Thread-0 开始
+</span><span style="font-style:italic"></span><span style="color:#66d9ef">&gt; </span><span style="font-style:italic">949 : Thread-2 开始
+</span><span style="font-style:italic"></span>&gt; 949 : Thread-1 开始</code></pre></div>
+<h2 id="实现原理">实现原理</h2>
 
-<p>}).start();
-}</p>
+<h3 id="countdownlatch-sync">CountDownLatch.Sync</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">class</span> CountDownLatch {
+  <span style="color:#75715e">// 基于 AbstractQueuedSynchronizer 的共享资源逻辑
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">private</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">class</span> Sync <span style="color:#a6e22e">extends</span> AbstractQueuedSynchronizer {
 
-<p>ThreadUtil.sleep(3, TimeUnit.SECONDS);
-Tool.println(&ldquo;开始干活&rdquo;);
-countDownLatch.countDown();</p>
+    <span style="color:#75715e">// 初始 同步化状态，该状态的含义由子类定义
+</span><span style="color:#75715e"></span>    Sync(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">count</span>) {
+      setState(count);
+    }
 
-<pre><code>
-&gt; ```
-&gt; 946 : Thread-0 等待主线程
-&gt; 946 : Thread-2 等待主线程
-&gt; 946 : Thread-1 等待主线程
-&gt; 949 : 开始干活
-&gt; 949 : Thread-0 开始
-&gt; 949 : Thread-2 开始
-&gt; 949 : Thread-1 开始
-&gt; ```
+    <span style="color:#75715e">// 基于 AbstractQueuedSynchronizer 的 共享模式
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">protected</span> <span style="color:#a6e22e">int</span> tryAcquireShared(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">acquires</span>) {
+      <span style="color:#75715e">// 如果 同步化状态 是 0，可以获取资源（执行资格），否则 park
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">return</span> (getState() <span style="color:#f92672">==</span> 0) <span style="color:#f92672">?</span> 1 <span style="color:#f92672">:</span> <span style="color:#f92672">-</span>1;
+    }
 
-
-
-## 实现原理
-
-</code></pre>
-
-<p>java
-public class CountDownLatch {
-  // 基于 AbstractQueuedSynchronizer 的共享资源逻辑
-  private static final class Sync extends AbstractQueuedSynchronizer {</p>
-
-<pre><code>// 初始 同步化状态，该状态的含义由子类定义
-Sync(int count) {
-  setState(count);
-}
-
-// 基于 AbstractQueuedSynchronizer 的 共享模式
-protected int tryAcquireShared(int acquires) {
-  // 如果 同步化状态 是 0，可以获取资源（执行资格），否则 park
-  return (getState() == 0) ? 1 : -1;
-}
-
-protected boolean tryReleaseShared(int releases) {
-  for (;;) {
-    int c = getState();
-    // 已经是 0 的话，无需处理
-    if (c == 0)
-      return false;
-
-    // ❤ count - 1 
-    int nextc = c - 1;
-    // 重试 + CAS 修改 state 的值
-    if (compareAndSetState(c, nextc))
-      // 直到 count 到 0，才允许释放 release
-      return nextc == 0;
+    <span style="color:#66d9ef">protected</span> <span style="color:#a6e22e">boolean</span> tryReleaseShared(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">releases</span>) {
+      <span style="color:#66d9ef">for</span> (;;) {
+        <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">c</span> <span style="color:#f92672">=</span> getState();
+        <span style="color:#75715e">// 已经是 0 的话，无需处理
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> (c <span style="color:#f92672">==</span> 0)
+          <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+        
+        <span style="color:#75715e">// ❤ count - 1 
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">nextc</span> <span style="color:#f92672">=</span> c <span style="color:#f92672">-</span> 1;
+        <span style="color:#75715e">// 重试 + CAS 修改 state 的值
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> (compareAndSetState(c, nextc))
+          <span style="color:#75715e">// 直到 count 到 0，才允许释放 release
+</span><span style="color:#75715e"></span>          <span style="color:#66d9ef">return</span> nextc <span style="color:#f92672">==</span> 0;
+      }
+    }
   }
-}
-</code></pre>
 
-<p>}</p>
+  ...
 
-<p>&hellip;</p>
+  <span style="color:#75715e">// 初始化个数
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">CountDownLatch</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">count</span>) {
+    <span style="color:#66d9ef">if</span> (count <span style="color:#f92672">&lt;</span> 0) <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> IllegalArgumentException(<span style="color:#e6db74">&#34;count &lt; 0&#34;</span>);
+    <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">sync</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Sync(count);
+  }
 
-<p>// 初始化个数
-  public CountDownLatch(int count) {
-    if (count &lt; 0) throw new IllegalArgumentException(&ldquo;count &lt; 0&rdquo;);
-    this.sync = new Sync(count);
-  }</p>
+  <span style="color:#75715e">// 获取共享资源，失败的话 park，通过 tryAcquireShared 的实现来控制行为
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">void</span> await() <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span> {
+    sync.<span style="color:#a6e22e">acquireSharedInterruptibly</span>(1);
+  }
 
-<p>// 获取共享资源，失败的话 park，通过 tryAcquireShared 的实现来控制行为
-  public void await() throws InterruptedException {
-    sync.acquireSharedInterruptibly(1);
-  }</p>
+  <span style="color:#75715e">// 释放资源，通过 tryReleaseShared 的实现来控制行为
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">void</span> countDown() {
+    sync.<span style="color:#a6e22e">releaseShared</span>(1);
+  }
+  
+  ...  
+}</code></pre></div>
+<h3 id="acquiresharedinterruptibly">acquireSharedInterruptibly</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">acquireSharedInterruptibly</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">arg</span>) <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span> {
+  <span style="color:#66d9ef">if</span> (Thread.<span style="color:#a6e22e">interrupted</span>())
+    <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> InterruptedException();
+  
+  <span style="color:#75715e">// (getState() == 0) ? 1 : -1
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (tryAcquireShared(arg) <span style="color:#f92672">&lt;</span> 0)
+    <span style="color:#75715e">// 与 doAcquireShared 流程基本一致
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 只不过 park 过程中被中断 会抛出 InterruptedException 异常，而 doAcquireShared 只是标记一下
+</span><span style="color:#75715e"></span>    doAcquireSharedInterruptibly(arg);
+}</code></pre></div>
+<h3 id="doacquiresharedinterruptibly">doAcquireSharedInterruptibly</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">void</span> doAcquireSharedInterruptibly(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">arg</span>) <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span> {
+  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Node</span> node <span style="color:#f92672">=</span> addWaiter(Node.<span style="color:#a6e22e">SHARED</span>);
+  <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">failed</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>;
+  <span style="color:#66d9ef">try</span> {
+    <span style="color:#66d9ef">for</span> (;;) {
+      <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Node</span> p <span style="color:#f92672">=</span> node.<span style="color:#a6e22e">predecessor</span>();
+      <span style="color:#66d9ef">if</span> (p <span style="color:#f92672">==</span> head) {
+        <span style="color:#75715e">// (getState() == 0) ? 1 : -1
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">r</span> <span style="color:#f92672">=</span> tryAcquireShared(arg);
+        <span style="color:#66d9ef">if</span> (r <span style="color:#f92672">&gt;=</span> 0) {
+          setHeadAndPropagate(node, r);
+          p.<span style="color:#a6e22e">next</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>; <span style="color:#75715e">// help GC
+</span><span style="color:#75715e"></span>          failed <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span>;
+          <span style="color:#66d9ef">return</span>;
+        }
+      }
+      <span style="color:#66d9ef">if</span> (shouldParkAfterFailedAcquire(p, node) <span style="color:#f92672">&amp;&amp;</span> parkAndCheckInterrupt())
+        <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> InterruptedException();
+    }
+  } <span style="color:#66d9ef">finally</span> {
+    <span style="color:#66d9ef">if</span> (failed)
+      cancelAcquire(node);
+  }
+}</code></pre></div>
+<h2 id="小结">小结</h2>
 
-<p>// 释放资源，通过 tryReleaseShared 的实现来控制行为
-  public void countDown() {
-    sync.releaseShared(1);
-  }</p>
+<ul>
+<li><p><code>countDownLatch.await</code> 的时候，调用 <code>acquireSharedXxx</code> 尝试获取共享资源</p></li>
 
-<p>&hellip;<br />
-}
-```</p>
+<li><p>获取的时候 通过 <code>tryAcquireShared(arg)</code> 回调子类实现，由子类来控制是否可以获取成功</p></li>
+
+<li><p>如果 <code>state</code> 即 <code>count</code> &gt; 0 则获取失败，<code>park</code> 当前线程，加入到 sync 队列</p></li>
+
+<li><p>多次 <code>await</code> 的时候，因为前驱节点不是 head，同样 <code>park</code> 当前线程</p></li>
+</ul>
+
+<hr />
+
+<ul>
+<li><p><code>countDownLatch.countDown</code> 的时候，调用 <code>releaseShared</code> 释放共享资源，即 <code>await</code> 的线程</p></li>
+
+<li><p>释放之前 通过 <code>tryReleaseShared</code> 回调子类实现，由子类来控制是否可以应该释放唤醒</p></li>
+
+<li><p><code>tryReleaseShared</code> 判断如果 <code>count == 0</code>，则返回 <code>true</code> 进行后续释放</p></li>
+
+<li><p>共享资源的释放会同时唤醒 sync 队列中的所有 共享节点，即 <code>await</code> 的所有线程</p></li>
+</ul>
 
 <h2 id="read-more">Read More</h2>
 
@@ -270,8 +314,8 @@ protected boolean tryReleaseShared(int releases) {
   
   <div>
     
-    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/0f2a3ff83effc1c2a2347aeb51e8310c59b1e843" title='Last modified Feb 15, 2020 by 杨凯彬' target="_blank" rel="noopener">
-      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 15, 2020
+    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/bdfad1bf73730f661dd31f4a6725603589f716c6" title='Last modified Feb 19, 2020 by 杨凯彬' target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 19, 2020
     </a>
   </div>
   
@@ -299,7 +343,15 @@ protected boolean tryReleaseShared(int releases) {
 <li><a href="#如何使用">如何使用</a>
 <ul>
 <li><a href="#主线程-等待-子线程">主线程 等待 子线程</a></li>
+<li><a href="#子线程-等待-主线程">子线程 等待 主线程</a></li>
 </ul></li>
+<li><a href="#实现原理">实现原理</a>
+<ul>
+<li><a href="#countdownlatch-sync">CountDownLatch.Sync</a></li>
+<li><a href="#acquiresharedinterruptibly">acquireSharedInterruptibly</a></li>
+<li><a href="#doacquiresharedinterruptibly">doAcquireSharedInterruptibly</a></li>
+</ul></li>
+<li><a href="#小结">小结</a></li>
 <li><a href="#read-more">Read More</a></li>
 </ul></li>
 </ul>

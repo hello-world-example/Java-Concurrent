@@ -66,7 +66,7 @@ https://github.com/alex-shpak/hugo-book
 <ul>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/LockSupport/">LockSupport</a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/AbstractQueuedSynchronizer/">AbstractQueuedSynchronizer</a></li>
-<li><del>ReentrantLock</del></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/locks/ReentrantLock/">ReentrantLock</a></li>
 <li><del><sup>[8]</sup>StampedLock</del></li>
 </ul></li>
 <li><strong>java.util.concurrent</strong>
@@ -80,7 +80,13 @@ https://github.com/alex-shpak/hugo-book
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/CountDownLatch/">CountDownLatch <sup>🔒</sup></a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/Semaphore/">Semaphore<sup>🔒</sup></a></li>
 <li><a href="/Java-Concurrent/docs/java.util.concurrent/CyclicBarrier/">CyclicBarrier<sup>🔒</sup></a></li>
-<li><a href="/Java-Concurrent/docs/java.util.concurrent/Phaser/"><sup>[7]</sup> Phaser<sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/Phaser/"><sup>[7]</sup> <del>Phaser</del><sup>🔒</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/BlockingQueue/">BlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/ArrayBlockingQueue/">ArrayBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/LinkedBlockingQueue/">LinkedBlockingQueue<sup>📏</sup></a></li>
+<li><a href="/Java-Concurrent/docs/java.util.concurrent/PriorityBlockingQueue/">PriorityBlockingQueue<sup>📏</sup></a></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/SynchronousQueue/">SynchronousQueue<sup>📏</sup></a></em></li>
+<li><em><a href="/Java-Concurrent/docs/java.util.concurrent/Exchanger/"> Exchanger<sup>📏</sup></a></em></li>
 </ul></li>
 <li><strong>java.util.concurrent.atomic</strong>
 
@@ -120,7 +126,166 @@ https://github.com/alex-shpak/hugo-book
 </header>
 
       
-<article class="markdown"></article>
+<article class="markdown">
+
+<h1 id="reentrantlock">ReentrantLock</h1>
+
+<h2 id="实现原理">实现原理</h2>
+
+<h3 id="sync">Sync</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 加锁 和 释放的过程，都是都 对 state(重入次数) 的维护
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">abstract</span> <span style="color:#a6e22e">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Sync</span> <span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">AbstractQueuedSynchronizer</span> {
+
+  <span style="color:#66d9ef">abstract</span> <span style="color:#a6e22e">void</span> lock();
+
+  <span style="color:#75715e">// 非公平锁的实现
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">boolean</span> nonfairTryAcquire(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">acquires</span>) {
+    <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Thread</span> current <span style="color:#f92672">=</span> Thread.<span style="color:#a6e22e">currentThread</span>();
+    <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">c</span> <span style="color:#f92672">=</span> getState();
+    
+    <span style="color:#75715e">//【抢占锁】 为 0 时说明没有线程持有锁，
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (c <span style="color:#f92672">==</span> 0) {
+      <span style="color:#75715e">// CAS 自旋竞争
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> (compareAndSetState(0, acquires)) {
+        <span style="color:#75715e">// 成功后，独占线程设置为自己
+</span><span style="color:#75715e"></span>        setExclusiveOwnerThread(current);
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+      }
+    }
+    <span style="color:#75715e">// 【重入锁】不为 0 时判断独占线程是否自己， 是的话重入
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> (current <span style="color:#f92672">==</span> getExclusiveOwnerThread()) {
+      <span style="color:#75715e">// 重入次数 + 1
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">nextc</span> <span style="color:#f92672">=</span> c <span style="color:#f92672">+</span> acquires;
+      <span style="color:#66d9ef">if</span> (nextc <span style="color:#f92672">&lt;</span> 0) <span style="color:#75715e">// overflow
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> Error(<span style="color:#e6db74">&#34;Maximum lock count exceeded&#34;</span>);
+      setState(nextc);
+      <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+    }
+    <span style="color:#75715e">// 竞争失败，排队
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+  }
+
+  <span style="color:#66d9ef">protected</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">tryRelease</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">releases</span>) {
+    <span style="color:#75715e">// 减少重入次数
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">c</span> <span style="color:#f92672">=</span> getState() <span style="color:#f92672">-</span> releases;
+    <span style="color:#66d9ef">if</span> (Thread.<span style="color:#a6e22e">currentThread</span>() <span style="color:#f92672">!=</span> getExclusiveOwnerThread())
+      <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> IllegalMonitorStateException();
+    
+
+    <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">free</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span>;
+    <span style="color:#66d9ef">if</span> (c <span style="color:#f92672">==</span> 0) {
+      <span style="color:#75715e">// 减到 0 的时候清空独占线程
+</span><span style="color:#75715e"></span>      free <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>;
+      setExclusiveOwnerThread(<span style="color:#66d9ef">null</span>);
+    }
+    setState(c);
+    <span style="color:#66d9ef">return</span> free;
+  }
+
+  <span style="color:#75715e">// 用到 Condition 需要实现该方法
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">protected</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isHeldExclusively</span>() {
+    <span style="color:#75715e">// 当前独占线程是否持有锁
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span> getExclusiveOwnerThread() <span style="color:#f92672">==</span> Thread.<span style="color:#a6e22e">currentThread</span>();
+  }
+  
+  ...
+}</code></pre></div>
+<h3 id="nonfairsync-非公平">NonfairSync 非公平</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">static</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">NonfairSync</span> <span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Sync</span> {
+
+  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">void</span> lock() {
+    <span style="color:#75715e">// CAS 竞争把 State 从 0 设置为 1
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (compareAndSetState(0, 1))
+      <span style="color:#75715e">// 成功，标记当前线程独占
+</span><span style="color:#75715e"></span>      setExclusiveOwnerThread(Thread.<span style="color:#a6e22e">currentThread</span>());
+    <span style="color:#66d9ef">else</span>
+      <span style="color:#75715e">// tryAcquire + enQueue 入队
+</span><span style="color:#75715e"></span>      acquire(1);
+  }
+
+  <span style="color:#66d9ef">protected</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">tryAcquire</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">acquires</span>) {
+    <span style="color:#66d9ef">return</span> nonfairTryAcquire(acquires);
+  }
+}</code></pre></div>
+<h3 id="fairsync-公平">FairSync 公平</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">static</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FairSync</span> <span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Sync</span> {
+
+  <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">void</span> lock() {
+    acquire(1);
+  }
+
+  <span style="color:#66d9ef">protected</span> <span style="color:#a6e22e">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">tryAcquire</span>(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">acquires</span>) {
+    <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Thread</span> current <span style="color:#f92672">=</span> Thread.<span style="color:#a6e22e">currentThread</span>();
+    <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">c</span> <span style="color:#f92672">=</span> getState();
+    <span style="color:#66d9ef">if</span> (c <span style="color:#f92672">==</span> 0) {
+      <span style="color:#75715e">// 比非公平锁，多了一步 !hasQueuedPredecessors()，判断是否有排队
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>hasQueuedPredecessors() <span style="color:#f92672">&amp;&amp;</span> compareAndSetState(0, acquires)) {
+        setExclusiveOwnerThread(current);
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+      }
+    }
+    <span style="color:#75715e">// 与非公平锁一样
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> (current <span style="color:#f92672">==</span> getExclusiveOwnerThread()) {
+      <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">nextc</span> <span style="color:#f92672">=</span> c <span style="color:#f92672">+</span> acquires;
+      <span style="color:#66d9ef">if</span> (nextc <span style="color:#f92672">&lt;</span> 0)
+        <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> Error(<span style="color:#e6db74">&#34;Maximum lock count exceeded&#34;</span>);
+      setState(nextc);
+      <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+    }
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+  }
+}</code></pre></div>
+<h2 id="小结">小结</h2>
+
+<ul>
+<li><code>ReentrantLock</code> 的 非公平锁<strong>并非严格意义上非公平锁</strong>，<strong>只是没有线程持有锁的时候，这时进行 CAS 是随机的</strong></li>
+<li>一旦有线程排队现象，获取锁的时候直接排队</li>
+<li>而且释放锁的时候也是按照队列顺序释放的，<strong>并非随机释放</strong></li>
+</ul>
+
+<h2 id="一个示例">一个示例</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">ReentrantLock</span> lock <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ReentrantLock();
+<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Condition</span> condition <span style="color:#f92672">=</span> lock.<span style="color:#a6e22e">newCondition</span>();
+
+<span style="color:#75715e">// 生成 20 个数字
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">final</span> <span style="color:#a6e22e">ArrayList</span><span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">array</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ArrayList<span style="color:#f92672">&lt;&gt;</span>();
+<span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">=</span> 0; i <span style="color:#f92672">&lt;</span> 200; i<span style="color:#f92672">++</span>) {
+  array.<span style="color:#a6e22e">add</span>(i);
+}
+
+<span style="color:#66d9ef">final</span> <span style="color:#a6e22e">Runnable</span> runnable <span style="color:#f92672">=</span> () <span style="color:#f92672">-&gt;</span> {
+  <span style="color:#66d9ef">for</span> (; ; ) {
+    <span style="color:#66d9ef">try</span> {
+      lock.<span style="color:#a6e22e">lock</span>();
+      ThreadUtil.<span style="color:#a6e22e">sleep</span>(50, TimeUnit.<span style="color:#a6e22e">MILLISECONDS</span>);
+			<span style="color:#75715e">// 唤醒，如果 condition 队列中没有数据，则没有效果
+</span><span style="color:#75715e"></span>      condition.<span style="color:#a6e22e">signal</span>();
+      <span style="color:#75715e">// 没有数据的时候结束
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">if</span> (array.<span style="color:#a6e22e">isEmpty</span>()) {
+        <span style="color:#66d9ef">break</span>;
+      }
+			<span style="color:#75715e">// 删除 并 输出列表中的第一条数据
+</span><span style="color:#75715e"></span>      Tool.<span style="color:#a6e22e">println</span>(array.<span style="color:#a6e22e">remove</span>(0));
+
+      <span style="color:#66d9ef">try</span> {
+        <span style="color:#75715e">// park 等待
+</span><span style="color:#75715e"></span>        condition.<span style="color:#a6e22e">await</span>();
+      } <span style="color:#66d9ef">catch</span> (InterruptedException <span style="color:#a6e22e">e</span>) { e.<span style="color:#a6e22e">printStackTrace</span>(); }
+    } <span style="color:#66d9ef">finally</span> {
+      lock.<span style="color:#a6e22e">unlock</span>();
+    }
+  }
+};
+
+<span style="color:#75715e">// 
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">new</span> Thread(runnable).<span style="color:#a6e22e">start</span>();
+<span style="color:#66d9ef">new</span> Thread(runnable).<span style="color:#a6e22e">start</span>();</code></pre></div>
+<h2 id="read-more">Read More</h2>
+
+<ul>
+<li><a href="https://tool.oschina.net/uploads/apidocs/jdk-zh/java/util/concurrent/locks/ReentrantLock.html">java.util.concurrent.locks.ReentrantLock</a></li>
+</ul>
+</article>
 
       
 <div class="book-footer justify-between">
@@ -147,6 +312,25 @@ https://github.com/alex-shpak/hugo-book
 
     
   
+
+  <aside class="book-toc level-3 fixed">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#reentrantlock">ReentrantLock</a>
+<ul>
+<li><a href="#实现原理">实现原理</a>
+<ul>
+<li><a href="#sync">Sync</a></li>
+<li><a href="#nonfairsync-非公平">NonfairSync 非公平</a></li>
+<li><a href="#fairsync-公平">FairSync 公平</a></li>
+</ul></li>
+<li><a href="#小结">小结</a></li>
+<li><a href="#一个示例">一个示例</a></li>
+<li><a href="#read-more">Read More</a></li>
+</ul></li>
+</ul>
+</nav>
+  </aside>
 
 
 

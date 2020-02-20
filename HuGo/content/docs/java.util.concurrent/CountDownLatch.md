@@ -30,13 +30,15 @@ countDownLatch.await();
 Tool.println(count + "个 任务都已完成!! ");
 ```
 
-> ```bash
+```markdown
 > 564 : 等待 3个 任务完成
 > 564 : Thread-0 完成
 > 565 : Thread-1 完成
 > 566 : Thread-2 完成
 > 566 : 3个 任务都已完成!! 
-> ```
+```
+
+
 
 ### 子线程 等待 主线程
 
@@ -62,7 +64,7 @@ Tool.println("开始干活");
 countDownLatch.countDown();
 ```
 
-> ```
+```markdown
 > 946 : Thread-0 等待主线程
 > 946 : Thread-2 等待主线程
 > 946 : Thread-1 等待主线程
@@ -70,11 +72,13 @@ countDownLatch.countDown();
 > 949 : Thread-0 开始
 > 949 : Thread-2 开始
 > 949 : Thread-1 开始
-> ```
+```
 
 
 
 ## 实现原理
+
+### CountDownLatch.Sync
 
 ```java
 public class CountDownLatch {
@@ -130,6 +134,70 @@ public class CountDownLatch {
   ...  
 }
 ```
+
+### acquireSharedInterruptibly
+
+```java
+public final void acquireSharedInterruptibly(int arg) throws InterruptedException {
+  if (Thread.interrupted())
+    throw new InterruptedException();
+  
+  // (getState() == 0) ? 1 : -1
+  if (tryAcquireShared(arg) < 0)
+    // 与 doAcquireShared 流程基本一致
+    // 只不过 park 过程中被中断 会抛出 InterruptedException 异常，而 doAcquireShared 只是标记一下
+    doAcquireSharedInterruptibly(arg);
+}
+```
+
+### doAcquireSharedInterruptibly
+
+```java
+private void doAcquireSharedInterruptibly(int arg) throws InterruptedException {
+  final Node node = addWaiter(Node.SHARED);
+  boolean failed = true;
+  try {
+    for (;;) {
+      final Node p = node.predecessor();
+      if (p == head) {
+        // (getState() == 0) ? 1 : -1
+        int r = tryAcquireShared(arg);
+        if (r >= 0) {
+          setHeadAndPropagate(node, r);
+          p.next = null; // help GC
+          failed = false;
+          return;
+        }
+      }
+      if (shouldParkAfterFailedAcquire(p, node) && parkAndCheckInterrupt())
+        throw new InterruptedException();
+    }
+  } finally {
+    if (failed)
+      cancelAcquire(node);
+  }
+}
+```
+
+## 小结
+
+- `countDownLatch.await` 的时候，调用 `acquireSharedXxx` 尝试获取共享资源
+
+- 获取的时候 通过 `tryAcquireShared(arg)` 回调子类实现，由子类来控制是否可以获取成功
+
+- 如果 `state` 即 `count` > 0 则获取失败，`park` 当前线程，加入到 sync 队列
+
+- 多次 `await` 的时候，因为前驱节点不是 head，同样 `park` 当前线程
+
+  ---
+
+- `countDownLatch.countDown` 的时候，调用 `releaseShared` 释放共享资源，即 `await` 的线程
+
+- 释放之前 通过 `tryReleaseShared` 回调子类实现，由子类来控制是否可以应该释放唤醒
+
+- `tryReleaseShared` 判断如果 `count == 0`，则返回 `true` 进行后续释放
+
+- 共享资源的释放会同时唤醒 sync 队列中的所有 共享节点，即 `await` 的所有线程
 
 
 
