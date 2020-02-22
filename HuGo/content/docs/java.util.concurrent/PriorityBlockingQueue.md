@@ -54,6 +54,27 @@ public boolean offer(E e) {
 }
 ```
 
+### siftUpComparable 入堆
+
+```java
+private static <T> void siftUpComparable(int k, T x, Object[] array) {
+  Comparable<? super T> key = (Comparable<? super T>) x;
+  while (k > 0) {
+    // (k - 1) / 2  即 当前节点的父节点
+    int parent = (k - 1) >>> 1;
+    Object e = array[parent];
+    // 比父节点大，则退出
+    if (key.compareTo((T) e) >= 0)
+      break;
+
+    // 比父节点小，则与之交换（小顶堆）
+    array[k] = e;
+    k = parent;
+  }
+  array[k] = key;
+}
+```
+
 ### take
 
 ```java
@@ -83,6 +104,7 @@ private E dequeue() {
     Object[] array = queue;
     // 根据堆排序算法，第一个元素，优先级最高
     E result = (E) array[0];
+    // 最有一个元素入堆顶，重排堆
     E x = (E) array[n];
     array[n] = null;
     
@@ -99,43 +121,39 @@ private E dequeue() {
 }
 ```
 
-## 堆排序 TODO
+### siftDownComparable 重排堆
 
-### 二叉堆
-
-- 小顶堆：父结点  <= 子节点；大顶堆：父结点  >= 子节点；
-- 每个结点的左子树和右子树都是一个二叉堆
-
-```bash
-  # 小顶堆 逻辑结构
-        10
-      ↙    ↘
-   15        56
- ↙   ↘     ↙
-25   30    70
-
-# 存储结构
-[10][15][56][25][30][70]
-__0___1___2___3___4___5
+```java
+// k = 0 = 堆顶索引
+// x = 堆尾数据
+// n = size = 堆尾索引
+private static <T> void siftDownComparable(int k, T x, Object[] array, int n) {
+  if (n > 0) {
+    Comparable<? super T> key = (Comparable<? super T>)x;
+    int half = n >>> 1;           // loop while a non-leaf
+    // size / 2 只需要循环一半
+    while (k < half) {
+      // k * 2 + 1 = 左子节点
+      int child = (k << 1) + 1; // assume left child is least
+      Object c = array[child];
+      // k * 2 + 1 = 左子节点
+      int right = child + 1;
+      if (right < n && ((Comparable<? super T>) c).compareTo((T) array[right]) > 0)
+        c = array[child = right];
+      if (key.compareTo((T) c) <= 0)
+        break;
+      // 找到最小节点与之交换
+      array[k] = c;
+      k = child;
+    }
+    array[k] = key;
+  }
+}
 ```
 
+## 堆排序
 
-
-- 数组的**第一个节点是堆顶**
-
-- 节点 `i` 的 **父节点**：`(i – 1) / 2` | `(i - 1) >> 1`
-
-- 节点 `i` 的 **左节点**：`2 * i + 1` | `i << 1 + 1`
-
-  - 第一个节点的左节点 = `2*0+1 = 1` 即 `15`
-
-- 节点 `i` 的 **右节点**：`2 * i + 2` | `i << 1 + 2`
-
-  - 第一个节点的右节点 = `2*0+2 = 2` 即 `56`
-
-  
-
-
+算法详见： [堆排序](/Algorithms/docs/Sort/HeapSort/)
 
 ## Read More
 

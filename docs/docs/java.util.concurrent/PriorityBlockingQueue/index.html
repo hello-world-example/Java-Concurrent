@@ -179,6 +179,23 @@ https://github.com/alex-shpak/hugo-book
   }
   <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
 }</code></pre></div>
+<h3 id="siftupcomparable-入堆">siftUpComparable 入堆</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">static</span> <span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">void</span> siftUpComparable(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">k</span>, T <span style="color:#a6e22e">x</span>, Object[] <span style="color:#a6e22e">array</span>) {
+  Comparable<span style="color:#f92672">&lt;?</span> <span style="color:#66d9ef">super</span> <span style="color:#a6e22e">T</span><span style="color:#f92672">&gt;</span> key <span style="color:#f92672">=</span> (Comparable<span style="color:#f92672">&lt;?</span> <span style="color:#66d9ef">super</span> <span style="color:#a6e22e">T</span><span style="color:#f92672">&gt;</span>) x;
+  <span style="color:#66d9ef">while</span> (k <span style="color:#f92672">&gt;</span> 0) {
+    <span style="color:#75715e">// (k - 1) / 2  即 当前节点的父节点
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">parent</span> <span style="color:#f92672">=</span> (k <span style="color:#f92672">-</span> 1) <span style="color:#f92672">&gt;&gt;&gt;</span> 1;
+    Object <span style="color:#a6e22e">e</span> <span style="color:#f92672">=</span> array[parent];
+    <span style="color:#75715e">// 比父节点大，则退出
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (key.<span style="color:#a6e22e">compareTo</span>((T) e) <span style="color:#f92672">&gt;=</span> 0)
+      <span style="color:#66d9ef">break</span>;
+
+    <span style="color:#75715e">// 比父节点小，则与之交换（小顶堆）
+</span><span style="color:#75715e"></span>    array[k] <span style="color:#f92672">=</span> e;
+    k <span style="color:#f92672">=</span> parent;
+  }
+  array[k] <span style="color:#f92672">=</span> key;
+}</code></pre></div>
 <h3 id="take">take</h3>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">E</span> take() <span style="color:#66d9ef">throws</span> <span style="color:#a6e22e">InterruptedException</span> {
   <span style="color:#66d9ef">final</span> <span style="color:#a6e22e">ReentrantLock</span> lock <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">lock</span>;
@@ -202,7 +219,8 @@ https://github.com/alex-shpak/hugo-book
     Object[] <span style="color:#a6e22e">array</span> <span style="color:#f92672">=</span> queue;
     <span style="color:#75715e">// 根据堆排序算法，第一个元素，优先级最高
 </span><span style="color:#75715e"></span>    E <span style="color:#a6e22e">result</span> <span style="color:#f92672">=</span> (E) array[0];
-    E <span style="color:#a6e22e">x</span> <span style="color:#f92672">=</span> (E) array[n];
+    <span style="color:#75715e">// 最有一个元素入堆顶，重排堆
+</span><span style="color:#75715e"></span>    E <span style="color:#a6e22e">x</span> <span style="color:#f92672">=</span> (E) array[n];
     array[n] <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>;
     
     <span style="color:#75715e">// 调整堆数
@@ -216,43 +234,35 @@ https://github.com/alex-shpak/hugo-book
     <span style="color:#66d9ef">return</span> result;
   }
 }</code></pre></div>
-<h2 id="堆排序-todo">堆排序 TODO</h2>
+<h3 id="siftdowncomparable-重排堆">siftDownComparable 重排堆</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// k = 0 = 堆顶索引
+</span><span style="color:#75715e">// x = 堆尾数据
+</span><span style="color:#75715e">// n = size = 堆尾索引
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#a6e22e">static</span> <span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">void</span> siftDownComparable(<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">k</span>, T <span style="color:#a6e22e">x</span>, Object[] <span style="color:#a6e22e">array</span>, <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">n</span>) {
+  <span style="color:#66d9ef">if</span> (n <span style="color:#f92672">&gt;</span> 0) {
+    Comparable<span style="color:#f92672">&lt;?</span> <span style="color:#66d9ef">super</span> <span style="color:#a6e22e">T</span><span style="color:#f92672">&gt;</span> key <span style="color:#f92672">=</span> (Comparable<span style="color:#f92672">&lt;?</span> <span style="color:#66d9ef">super</span> <span style="color:#a6e22e">T</span><span style="color:#f92672">&gt;</span>)x;
+    <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">half</span> <span style="color:#f92672">=</span> n <span style="color:#f92672">&gt;&gt;&gt;</span> 1;           <span style="color:#75715e">// loop while a non-leaf
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// size / 2 只需要循环一半
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">while</span> (k <span style="color:#f92672">&lt;</span> half) {
+      <span style="color:#75715e">// k * 2 + 1 = 左子节点
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">child</span> <span style="color:#f92672">=</span> (k <span style="color:#f92672">&lt;&lt;</span> 1) <span style="color:#f92672">+</span> 1; <span style="color:#75715e">// assume left child is least
+</span><span style="color:#75715e"></span>      Object <span style="color:#a6e22e">c</span> <span style="color:#f92672">=</span> array[child];
+      <span style="color:#75715e">// k * 2 + 1 = 左子节点
+</span><span style="color:#75715e"></span>      <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">right</span> <span style="color:#f92672">=</span> child <span style="color:#f92672">+</span> 1;
+      <span style="color:#66d9ef">if</span> (right <span style="color:#f92672">&lt;</span> n <span style="color:#f92672">&amp;&amp;</span> ((Comparable<span style="color:#f92672">&lt;?</span> <span style="color:#66d9ef">super</span> <span style="color:#a6e22e">T</span><span style="color:#f92672">&gt;</span>) c).<span style="color:#a6e22e">compareTo</span>((T) array[right]) <span style="color:#f92672">&gt;</span> 0)
+        c <span style="color:#f92672">=</span> array[child <span style="color:#f92672">=</span> right];
+      <span style="color:#66d9ef">if</span> (key.<span style="color:#a6e22e">compareTo</span>((T) c) <span style="color:#f92672">&lt;=</span> 0)
+        <span style="color:#66d9ef">break</span>;
+      <span style="color:#75715e">// 找到最小节点与之交换
+</span><span style="color:#75715e"></span>      array[k] <span style="color:#f92672">=</span> c;
+      k <span style="color:#f92672">=</span> child;
+    }
+    array[k] <span style="color:#f92672">=</span> key;
+  }
+}</code></pre></div>
+<h2 id="堆排序">堆排序</h2>
 
-<h3 id="二叉堆">二叉堆</h3>
-
-<ul>
-<li>小顶堆：父结点  &lt;= 子节点；大顶堆：父结点  &gt;= 子节点；</li>
-
-<li><p>每个结点的左子树和右子树都是一个二叉堆</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 小顶堆 逻辑结构</span>
-    <span style="color:#ae81ff">10</span>
-  ↙    ↘
-<span style="color:#ae81ff">15</span>        <span style="color:#ae81ff">56</span>
-↙   ↘     ↙
-<span style="color:#ae81ff">25</span>   <span style="color:#ae81ff">30</span>    <span style="color:#ae81ff">70</span>
-
-<span style="color:#75715e"># 存储结构</span>
-<span style="color:#f92672">[</span><span style="color:#ae81ff">10</span><span style="color:#f92672">][</span><span style="color:#ae81ff">15</span><span style="color:#f92672">][</span><span style="color:#ae81ff">56</span><span style="color:#f92672">][</span><span style="color:#ae81ff">25</span><span style="color:#f92672">][</span><span style="color:#ae81ff">30</span><span style="color:#f92672">][</span><span style="color:#ae81ff">70</span><span style="color:#f92672">]</span>
-__0___1___2___3___4___5</code></pre></div></li>
-
-<li><p>数组的<strong>第一个节点是堆顶</strong></p></li>
-
-<li><p>节点 <code>i</code> 的 <strong>父节点</strong>：<code>(i – 1) / 2</code> | <code>(i - 1) &gt;&gt; 1</code></p></li>
-
-<li><p>节点 <code>i</code> 的 <strong>左节点</strong>：<code>2 * i + 1</code> | <code>i &lt;&lt; 1 + 1</code></p>
-
-<ul>
-<li>第一个节点的左节点 = <code>2*0+1 = 1</code> 即 <code>15</code></li>
-</ul></li>
-
-<li><p>节点 <code>i</code> 的 <strong>右节点</strong>：<code>2 * i + 2</code> | <code>i &lt;&lt; 1 + 2</code></p>
-
-<ul>
-<li>第一个节点的右节点 = <code>2*0+2 = 2</code> 即 <code>56</code>
-
-<br /></li>
-</ul></li>
-</ul>
+<p>算法详见： <a href="/Algorithms/docs/Sort/HeapSort/">堆排序</a></p>
 
 <h2 id="read-more">Read More</h2>
 
@@ -262,7 +272,14 @@ __0___1___2___3___4___5</code></pre></div></li>
 </article>
 
       
-<div class="book-footer justify-end">
+<div class="book-footer justify-between">
+  
+  <div>
+    
+    <a href="https://github.com/hello-world-example/Java-Concurrent/commit/be97e8d0bb05cdeb311de42df2f78d74cbef2cf4" title='Last modified Feb 21, 2020 by 杨凯彬' target="_blank" rel="noopener">
+      <img src="/Java-Concurrent/svg/calendar.svg" alt="Changed" /> Feb 21, 2020
+    </a>
+  </div>
   
   
   <div>
@@ -289,13 +306,12 @@ __0___1___2___3___4___5</code></pre></div></li>
 <ul>
 <li><a href="#put">put</a></li>
 <li><a href="#offer">offer</a></li>
+<li><a href="#siftupcomparable-入堆">siftUpComparable 入堆</a></li>
 <li><a href="#take">take</a></li>
 <li><a href="#dequeue">dequeue</a></li>
+<li><a href="#siftdowncomparable-重排堆">siftDownComparable 重排堆</a></li>
 </ul></li>
-<li><a href="#堆排序-todo">堆排序 TODO</a>
-<ul>
-<li><a href="#二叉堆">二叉堆</a></li>
-</ul></li>
+<li><a href="#堆排序">堆排序</a></li>
 <li><a href="#read-more">Read More</a></li>
 </ul></li>
 </ul>
